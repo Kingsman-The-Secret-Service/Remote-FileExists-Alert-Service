@@ -56,9 +56,9 @@ class SSHClient:
         server.ehlo()
         server.starttls()
         server.ehlo()
-        server.login('dummy.letsmeditate@gmail.com', 'lets@2858')
+        server.login('test@gmail.com', 'test')
         msg = "\nFile Created!"  # Thdummy.letsmeditate@gmail.come /n separates the message from the headers (which we ignore for this example)
-        server.sendmail("dummy.letsmeditate@gmail.com", "akkravikumar@gmail.com", msg)
+        server.sendmail("test@gmail.com", "test1@gmail.com", msg)
 
     def connect_host(self, server, username, password, port):
         server, username, password = (server, username, password)
