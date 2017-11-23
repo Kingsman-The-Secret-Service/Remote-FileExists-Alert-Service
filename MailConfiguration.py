@@ -18,10 +18,8 @@ def initSetup():
         config.set('main', 'password', 'lets@2858')
         config.set('main', 'receiver', 'akkravikumar@gmail.com')
         config.set('main', 'subject', 'File Created')
-
         with open('config.ini', 'w') as f:
             config.write(f)
-
 
 def configMail():
     try:

@@ -1,4 +1,5 @@
 import re
+
 def checkValidIp(ip):
     try:
         parts = ip.split('.')
@@ -7,6 +8,7 @@ def checkValidIp(ip):
         return False
     except (AttributeError, TypeError):
         return False
+
 def checkValidPort(port):
     try:
         while not re.findall(r'[0-9]+', port):

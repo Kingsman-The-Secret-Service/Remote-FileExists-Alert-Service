@@ -23,9 +23,10 @@ def updateJson(option):
     try:
         conn_string = readJson()
         hostValues = conn_string[hostStr][index]
-        print 'Username = ', hostValues['username']
-        print 'Host = ', hostValues['ip_address']
-        print 'Port = ', hostValues['port']
+        print 'Username : ', hostValues['username']
+        print 'Host : ', hostValues['ip_address']
+        print 'Port : ', hostValues['port']
+        print 'Directory Path :', hostValues['dir_path']
     except IndexError:
         print 'Host not exist'
     print '---------------------'
@@ -33,8 +34,9 @@ def updateJson(option):
     print '(2) Password'
     print '(3) Host'
     print '(4) Port'
-    print '(5) All'
-    print '(6) Exit'
+    print '(5) Directory Path'
+    print '(6) All'
+    print '(7) Exit'
     print '---------------------'
     try:
         userSelectedHost = raw_input('Select option to update: ')
@@ -49,6 +51,8 @@ def updateJson(option):
         if int(userSelectedHost) == 4:
             updateHostConfigs(index,'Port','port')
         if int(userSelectedHost) == 5:
+            updateHostConfigs(index, 'Directory Path', 'dir_path')
+        if int(userSelectedHost) == 6:
             updateAllConfigs(index)
         else:
             raise IndexError
@@ -72,10 +76,14 @@ def updateAllConfigs(index):
     portValue = raw_input('Enter the port: ')
     if not portValue:
         portValue = '22'
+    dir_path = raw_input("Enter the directory path. (ex.:/home/user/): ")
+    while not Validations.checkIsEmpty(dir_path):
+        dir_path = raw_input('Please enter the directory path: ')
     conn_string[hostStr][index]['username'] = userNameValue
     conn_string[hostStr][index]['password'] = passwordValue
     conn_string[hostStr][index]['ip_address'] = ip_addressValue
     conn_string[hostStr][index]['port'] = portValue
+    conn_string[hostStr][index]['dir_path'] = dir_path
     writeJson(conn_string)
 
 def updateHostConfigs(index,obj, values):
