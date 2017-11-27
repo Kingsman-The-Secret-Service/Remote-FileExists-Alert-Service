@@ -12,7 +12,7 @@ def readJson():
 def writeJson(data):
     try:
         with open("test.json", "w") as jsonFile:
-            json.dump(data, jsonFile)
+            json.dump(data, jsonFile, indent=2)
     except IOError:
         print 'Host not found'
         return
@@ -24,9 +24,12 @@ def updateJson(option):
         conn_string = readJson()
         hostValues = conn_string[hostStr][index]
         print 'Username : ', hostValues['username']
+        print 'Password: *******'
         print 'Host : ', hostValues['ip_address']
         print 'Port : ', hostValues['port']
         print 'Directory Path :', hostValues['dir_path']
+        print 'File Name :', hostValues['file_name']
+
     except IndexError:
         print 'Host not exist'
     print '---------------------'
@@ -35,8 +38,9 @@ def updateJson(option):
     print '(3) Host'
     print '(4) Port'
     print '(5) Directory Path'
-    print '(6) All'
-    print '(7) Exit'
+    print '(6) File Name'
+    print '(7) All'
+    print '(8) Exit'
     print '---------------------'
     try:
         userSelectedHost = raw_input('Select option to update: ')
@@ -53,7 +57,9 @@ def updateJson(option):
         if int(userSelectedHost) == 5:
             updateHostConfigs(index, 'Directory Path', 'dir_path')
         if int(userSelectedHost) == 6:
-            updateAllConfigs(index)
+            updateHostConfigs(index, 'File name', 'file_name')
+        if int(userSelectedHost) == 7:
+            updateAllConfigs(inpopdex)
         else:
             raise IndexError
 
@@ -79,11 +85,15 @@ def updateAllConfigs(index):
     dir_path = raw_input("Enter the directory path. (ex.:/home/user/): ")
     while not Validations.checkIsEmpty(dir_path):
         dir_path = raw_input('Please enter the directory path: ')
+    file_name = raw_input("(Optional)Enter the file name. (ex:*.txt): ")
+    if not file_name:
+        file_name = ''
     conn_string[hostStr][index]['username'] = userNameValue
     conn_string[hostStr][index]['password'] = passwordValue
     conn_string[hostStr][index]['ip_address'] = ip_addressValue
     conn_string[hostStr][index]['port'] = portValue
     conn_string[hostStr][index]['dir_path'] = dir_path
+    conn_string[hostStr][index]['file_name'] = file_name
     writeJson(conn_string)
 
 def updateHostConfigs(index,obj, values):

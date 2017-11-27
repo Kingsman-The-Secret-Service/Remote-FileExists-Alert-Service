@@ -8,6 +8,9 @@ from email.mime.multipart import MIMEMultipart
 import JsonFile
 import Validations
 import MailConfiguration
+from multiprocessing.dummy import Pool as ThreadPool
+import glob, os
+import re
 import time
 
 class ServerEnvironment:
@@ -17,13 +20,15 @@ class ServerEnvironment:
         self.password=''
         self.port = ''
         self.dir_path = ''
+        self.filename = ''
 
-    def addServer(self, ipAddress, username, password, port, dir_path):
+    def addServer(self, ipAddress, username, password, port, dir_path, filename):
         self.ipAddress = ipAddress
         self.username = username
         self.password = password
         self.port = port
         self.dir_path = dir_path
+        self.filename = filename
 
     def createJsonFile(self):
         datas = {
@@ -31,7 +36,8 @@ class ServerEnvironment:
             "username": self.username,
             "password": self.password,
             "port": self.port,
-            "dir_path":self.dir_path
+            "dir_path":self.dir_path,
+            "file_name":self.filename
         }
         a = {}
         a['host'] = []
@@ -39,13 +45,10 @@ class ServerEnvironment:
             if not os.stat("test.json").st_size == 0:
                 config = json.loads(open('test.json').read())
                 config['host'].append(datas)
-                with open('test.json', 'w') as f:
-                    json.dump(config, f, indent=2)
+                JsonFile.writeJson(config)
         else:
             a['host'].append(datas)
-            with open('test.json', 'w') as f:
-                json.dump(a, f)
-
+            JsonFile.writeJson(a)
     def removeHostServer(self, index):
         try:
             data = JsonFile.readJson()
@@ -56,6 +59,13 @@ class ServerEnvironment:
             print 'Host not found'
 
 class SSHClient():
+    def calculateParallel(self, data, threads=2):
+        pool = ThreadPool(threads)
+        results = pool.map(self.connect_host, data)
+        pool.close()
+        pool.join()
+        return results
+
     def mailAlert(self):
         config = MailConfiguration.read_config()
         smtp = config.get('main', 'smtp')
@@ -79,9 +89,9 @@ class SSHClient():
         text = msg.as_string()
         server.sendmail(mail, "akkravikumar@gmail.com", text)
 
-    def connect_host(self, server, username, password, port, dir_path):
+    def connect_host(self, data):
         try:
-            server, username, password = (server, username, password)
+            server, username, password = (data['ip_address'], data['username'], data['password'])
             ssh = paramiko.SSHClient()
             paramiko.util.log_to_file("ssh.log")
             print 'connecting host...'
@@ -93,24 +103,39 @@ class SSHClient():
                 print 'connection failed'
             sftp = ssh.open_sftp()
             try:
-                list = sftp.listdir(dir_path)
+                folderPath = str(data['dir_path'])
+                list = sftp.listdir(folderPath)
                 if not list == []:
-                    self.mailAlert()
+                    fileExt = str(data['file_name'])
+                    if not fileExt:
+                        self.mailAlert()
+                    else:
+                        patern = re.compile(r"[^\\]%s$"%fileExt, re.I)
+                        filtered_files = [f for f in list if patern.search(f)]
+                        if filtered_files ==[] :
+                            if any(fileExt in s for s in list):
+                                # print 'yes'
+                                self.mailAlert()
+                            else:
+                                print 'No'
+                        else:
+                            self.mailAlert()
+                            print filtered_files
                 else:
                     print 'No files in this directory.'
-                for element in list:
-                    print '=', element
+                # for element in list:
+                #     print '=', element
             except IOError as e:
                 print e
+                return
             finally:
-                #threading.Timer(15.0, self.connect_host, args=(server, username, password, port, dir_path,)).start()
                 sftp.close()
                 ssh.close()
-        except  paramiko.AuthenticationException:
+        except paramiko.AuthenticationException:
             output = "Authentication Failed"
             print output
-        except KeyboardInterrupt:
-            return
+        # except KeyboardInterrupt:
+        #     return
 
 class Switcher(ServerEnvironment, SSHClient):
     def numbers_to_options(self, argument):
@@ -136,8 +161,16 @@ class Switcher(ServerEnvironment, SSHClient):
     def addHost(self): #Add Host
         try:
             ipAddress = raw_input("Enter the host: ")
-            while not Validations.checkValidIp(ipAddress):
+            while not Validations.checkIsEmpty(ipAddress):
                 ipAddress = raw_input("Enter the valid ip address: ")
+
+            while not Validations.isServerUp(ipAddress):
+                ipHost = raw_input('The entered host is server down. Do you want to continue? (y/n)')
+                if ipHost =='y':
+                    return
+                else:
+                    ipAddress = raw_input("Enter the valid ip address: ")
+
             userName = raw_input("Enter userName: ")
             while not Validations.checkIsEmpty(userName):
                 userName = raw_input("Please enter the username: ")
@@ -150,8 +183,9 @@ class Switcher(ServerEnvironment, SSHClient):
             dir_path = raw_input("Enter the directory path. (ex.:/home/user/): ")
             while not Validations.checkIsEmpty(dir_path):
                 dir_path = raw_input('Please enter the directory path: ')
+            file_name = raw_input("(Optional) Enter the file name or extension. (ex:*.txt): ")
 
-            self.addServer(ipAddress, userName, password, port, dir_path)
+            self.addServer(ipAddress, userName, password, port, dir_path, file_name)
             self.createJsonFile()
         except (IOError, KeyboardInterrupt):
             return
@@ -183,20 +217,45 @@ class Switcher(ServerEnvironment, SSHClient):
                 print 'No IP Address found, try Again'
                 return
             print '---------------------'
+            print '( 0 ) Run all'
             for index,element in enumerate(conn_string['host']):
                 print '(',index+1, ').', element['ip_address']
             print '---------------------'
-            userAction = raw_input('Enter the option to connect to host: ')
+            userAction = raw_input('Enter the option to host: ')
             while not Validations.checkIsInteger(userAction):
-                userAction = raw_input("Enter the option to connect to host: ")
+                userAction = raw_input("Enter the option to host: ")
 
-            hostDetails = conn_string['host'][int(userAction)-1]
-            self.connect_host(hostDetails['ip_address'],hostDetails['username'],hostDetails['password'],hostDetails['port'], hostDetails['dir_path'])
-            # t = threading.Timer(15.0, self.connect_host, args=(hostDetails['ip_address'],hostDetails['username'],hostDetails['password'],hostDetails['port'], hostDetails['dir_path'],))
-            # t.cancel()
+            if int(userAction) == 0:
+                list = []
+                for element in conn_string['host']:
+                    list.append(element)
 
-        except (IndexError, IOError, KeyboardInterrupt):
+                self.hostWatcherAll(list)
+            else:
+                self.hostWatcher(userAction)
+
+        except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Host not found'
+            return
+
+    def hostWatcher(self, index):
+        try:
+            while True:
+                conn_string = JsonFile.readJson()
+                hostDetails = conn_string['host'][int(index) - 1]
+                self.connect_host(hostDetails)
+                time.sleep(5)
+        except KeyboardInterrupt:
+            return
+
+    def hostWatcherAll(self, list):
+        try:
+            while True:
+                self.calculateParallel(list, len(list))
+                # for n in squaredNumbers:
+                #     print(n)
+                time.sleep(5)
+        except KeyboardInterrupt:
             return
 
     def editHostConfiguration(self):
@@ -213,7 +272,7 @@ class Switcher(ServerEnvironment, SSHClient):
             while not Validations.checkIsInteger(userHostOption):
                 userHostOption = raw_input("Select option to edit: ")
             JsonFile.updateJson(int(userHostOption))
-        except (IndexError, IOError, KeyboardInterrupt):
+        except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Configution not added.'
 
     def viewHost(self):
@@ -226,7 +285,7 @@ class Switcher(ServerEnvironment, SSHClient):
             for index, element in enumerate(conn_string['host']):
                 print '(', index + 1, ')', element['ip_address']
             print '---------------------'
-        except (IOError, KeyboardInterrupt):
+        except (IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Configution not added.'
 
     def updateMail(self):

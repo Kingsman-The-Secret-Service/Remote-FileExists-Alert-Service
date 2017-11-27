@@ -1,4 +1,5 @@
 import re
+import os
 
 def checkValidIp(ip):
     try:
@@ -42,3 +43,13 @@ def checkIsInteger(value):
         return False
     except (AttributeError, TypeError):
         return False
+
+def isServerUp(hostname):
+    if not hostname:
+        return False
+    else:
+        response = os.system("ping -c 1 " + hostname)
+        if response == 0:
+            return True
+        else:
+            return False

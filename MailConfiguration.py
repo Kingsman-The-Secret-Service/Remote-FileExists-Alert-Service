@@ -14,9 +14,9 @@ def initSetup():
         config.add_section('main')
         config.set('main', 'smtp', 'smtp.gmail.com')
         config.set('main', 'smtp_port', '587')
-        config.set('main', 'e-mail', 'dummy.letsmeditate@gmail.com')
-        config.set('main', 'password', 'lets@2858')
-        config.set('main', 'receiver', 'akkravikumar@gmail.com')
+        config.set('main', 'e-mail', 'xxxxxxx@gmail.com')
+        config.set('main', 'password', 'xxxxx')
+        config.set('main', 'receiver', 'yyyy@gmail.com')
         config.set('main', 'subject', 'File Created')
         with open('config.ini', 'w') as f:
             config.write(f)
