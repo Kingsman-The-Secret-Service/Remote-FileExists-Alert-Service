@@ -6,7 +6,6 @@ import Validations
 def initParser():
     return SafeConfigParser()
 
-
 def initSetup():
     if not os.path.isfile('config.ini'):
         config = initParser()

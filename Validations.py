@@ -1,7 +1,7 @@
 import re
 import os
 
-def checkValidIp(ip):
+def checkIp(ip):
     try:
         parts = ip.split('.')
         return len(parts) == 4 and all(0 <= int(part) < 256 for part in parts)
@@ -53,3 +53,10 @@ def isServerUp(hostname):
             return True
         else:
             return False
+
+
+def checkEmail(email):
+    if len(email) > 7:
+        if re.match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email):
+            return True
+    return False
