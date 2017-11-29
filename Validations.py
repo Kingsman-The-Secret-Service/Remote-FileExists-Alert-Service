@@ -1,5 +1,11 @@
 import re
 import os
+from Constant import HostConstant
+
+
+def initConst():
+    const = HostConstant()
+    return const.initSpinner()
 
 def checkIp(ip):
     try:
@@ -48,10 +54,14 @@ def isServerUp(hostname):
     if not hostname:
         return False
     else:
+        spinner = initConst()
+        spinner.start()
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
+            spinner.stop()
             return True
         else:
+            spinner.stop()
             return False
 
 

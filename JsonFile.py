@@ -1,6 +1,8 @@
 import json
 import Validations
 from HostMain import SSHClient
+from terminaltables import AsciiTable
+import getpass
 
 def sshInit():
     return SSHClient()
@@ -29,12 +31,23 @@ def updateJson(option):
     try:
         conn_string = readJson()
         hostValues = conn_string[hostStr][index]
-        print 'Username : ', hostValues['username']
-        print 'Password: *******'
-        print 'Host : ', hostValues['ip_address']
-        print 'Port : ', hostValues['port']
-        print 'Directory Path :', hostValues['dir_path']
-        print 'File Name :', hostValues['file_name']
+        table_data = []
+        table_data.append(['Mail', 'Values'])
+        table_data.append(['Username', hostValues['username']])
+        table_data.append(['Password',' *******'])
+        table_data.append(['Host', hostValues['ip_address']])
+        table_data.append(['Port', hostValues['port']])
+        table_data.append(['Directory Path', hostValues['dir_path']])
+        table_data.append(['File Name', hostValues['file_name']])
+        table_data.append(['E-mail', hostValues['email']])
+        table = AsciiTable(table_data)
+        print table.table
+        # print 'Username : ', hostValues['username']
+        # print 'Password: *******'
+        # print 'Host : ', hostValues['ip_address']
+        # print 'Port : ', hostValues['port']
+        # print 'Directory Path :', hostValues['dir_path']
+        # print 'File Name :', hostValues['file_name']
 
     except IndexError:
         print 'Host not exist'
@@ -45,8 +58,9 @@ def updateJson(option):
     print '(4) Port'
     print '(5) Directory Path'
     print '(6) File Name'
-    print '(7) All'
-    print '(8) Exit'
+    print '(7) E-mail'
+    print '(8) All'
+    print '(9) Exit'
     print '---------------------'
     try:
         userSelectedHost = raw_input('Select option to update: ')
@@ -65,6 +79,8 @@ def updateJson(option):
         if int(userSelectedHost) == 6:
             updateHostConfigs(index, 'File name', 'file_name')
         if int(userSelectedHost) == 7:
+            updateHostConfigs(index, 'E-mail', 'email')
+        if int(userSelectedHost) == 8:
             updateAllConfigs(index)
         else:
             raise IndexError
@@ -80,9 +96,9 @@ def updateAllConfigs(index):
     userNameValue = raw_input('Enter the username: ')
     while not Validations.checkIsEmpty(userNameValue):
         userNameValue = raw_input('Please enter the username: ')
-    passwordValue = raw_input('Enter the password: ')
+    passwordValue = getpass.getpass('Enter the password: ')
     while not Validations.checkIsEmpty(passwordValue):
-        passwordValue = raw_input('Please enter the password: ')
+        passwordValue = getpass.getpass('Please enter the password: ')
 
     ipAddress = raw_input('Enter the Host: ')
     # while not Validations.checkIp(ip_addressValue):
@@ -101,6 +117,8 @@ def updateAllConfigs(index):
         checkHostOption = raw_input('The host   do you want continue?(y/n)')
         if checkHostOption == 'n':
             return
+        else:
+            break
 
     portValue = raw_input('Enter the port: ')
     if not portValue:
@@ -112,19 +130,32 @@ def updateAllConfigs(index):
     file_name = raw_input("(Optional)Enter the file name. (ex:*.txt): ")
     if not file_name:
         file_name = ''
+    email = raw_input("Enter the email: ")
+    if email:
+        while not Validations.checkEmail(email):
+            email = raw_input('Enter the valid email address.: ')
+            if not email:
+                break
+    else:
+        email = ''
     conn_string[hostStr][index]['username'] = userNameValue
     conn_string[hostStr][index]['password'] = passwordValue
     conn_string[hostStr][index]['ip_address'] = ipAddress
     conn_string[hostStr][index]['port'] = portValue
     conn_string[hostStr][index]['dir_path'] = dir_path
     conn_string[hostStr][index]['file_name'] = file_name
+    conn_string[hostStr][index]['email'] = email
     writeJson(conn_string)
 
 
 def updateHostConfigs( index, obj, values):
     conn_string = readJson()
     tmp = conn_string["host"][index]
-    userValue = raw_input("Enter the " + obj + " value: ")
+    if values == 'password':
+        userValue = getpass.getpass("Enter the " + obj + " value: ")
+    else:
+        userValue  = raw_input("Enter the " + obj + " value: ")
+
     if values =='ip_address':
         while not Validations.checkIsEmpty(userValue):
             userValue = raw_input("Enter the valid host: ")
@@ -135,5 +166,13 @@ def updateHostConfigs( index, obj, values):
                 break
             else:
                 userValue = raw_input("Enter the valid host: ")
+    elif values == 'email':
+        if userValue:
+            while not Validations.checkEmail(userValue):
+                userValue = raw_input('Enter the valid email address.: ')
+                if not userValue:
+                    break
+        else:
+            userValue = ''
     conn_string['host'][index][values] = userValue
     writeJson(conn_string)

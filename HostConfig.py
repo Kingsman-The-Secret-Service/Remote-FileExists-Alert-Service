@@ -5,8 +5,11 @@ import Validations
 import MailConfiguration
 from HostEnv import ServerEnvironment
 from HostSSH import SSHClient
+from terminaltables import AsciiTable
+import getpass
 
 class HostOptions(ServerEnvironment, SSHClient):
+
     def numbers_to_options(self, argument):
         if int(argument) == 1:
             method_name = 'addHost'
@@ -43,12 +46,12 @@ class HostOptions(ServerEnvironment, SSHClient):
             userName = raw_input("\nEnter userName: ")
             while not Validations.checkIsEmpty(userName):
                 userName = raw_input("Please enter the username: ")
-            password = raw_input("Enter password: ")
+            password = getpass.getpass("Enter password: ")
             while not Validations.checkIsEmpty(password):
-                password = raw_input('Please enter the password: ')
+                password = getpass.getpass('Please enter the password: ')
 
-            while self.checkHost(ipAddress, userName, password) == 'Error':
-                checkHostOption = raw_input('Do you want continue?(y/n)')
+            while self.checkHost(ipAddress, userName, password) == 'Error' or '':
+                checkHostOption = raw_input('Error occured, Do you want continue?(y/n)')
                 if checkHostOption == 'n':
                     return
                 else:
@@ -84,12 +87,15 @@ class HostOptions(ServerEnvironment, SSHClient):
             if conn_string['host'] == []:
                 print 'No IP Address found, try Again'
                 return
-            print '---------------------'
+            table_data = []
+            table_data.append(['Options', 'Hosts'])
             for index, element in enumerate(conn_string['host']):
-                print '(', index + 1, ').', element['ip_address']
+                # print '(', index + 1, ').', element['ip_address']
+                table_data.append([str(index+1),  str(element['ip_address'])])
                 listsHost.append(str(element['ip_address']))
-            print '---------------------'
-            host = raw_input('Enter the host to remove: ')
+            table = AsciiTable(table_data)
+            print table.table
+            host = raw_input('Enter the option to remove: ')
             while not Validations.checkIsInteger(host):
                 host = raw_input("Enter the host to remove: ")
             choice = raw_input('Are you sure, you want to remove?(y/n)')
@@ -106,11 +112,14 @@ class HostOptions(ServerEnvironment, SSHClient):
             if not conn_string or conn_string['host'] == []:
                 print 'No IP Address found, try Again'
                 return
-            print '---------------------'
-            print '( 0 ) Run all'
+            table_data = []
+            table_data.append(['Options', 'Hosts'])
+            table_data.append(['0','Run All'])
             for index, element in enumerate(conn_string['host']):
-                print '(', index + 1, ').', element['ip_address']
-            print '---------------------'
+                table_data.append([str(index + 1), str(element['ip_address'])])
+                # print '(', index + 1, ').', element['ip_address']
+            table = AsciiTable(table_data)
+            print table.table
             userAction = raw_input('Enter the option to host: ')
             while not Validations.checkIsInteger(userAction):
                 userAction = raw_input("Enter the option to host: ")
@@ -134,18 +143,22 @@ class HostOptions(ServerEnvironment, SSHClient):
                 conn_string = JsonFile.readJson()
                 hostDetails = conn_string['host'][int(index) - 1]
                 self.connect_host(hostDetails)
-                time.sleep(60)
+                time.sleep(5)
         except KeyboardInterrupt:
+            self.stopProgress()
             return
 
     def hostWatcherAll(self, list):
+        spinner = Validations.initConst()
         try:
+            spinner.start()
             while True:
                 self.calculateParallel(list, len(list))
                 # for n in squaredNumbers:
                 #     print(n)
                 time.sleep(60)
         except KeyboardInterrupt:
+            spinner.stop()
             return
 
     def editHostConfiguration(self):
@@ -154,10 +167,12 @@ class HostOptions(ServerEnvironment, SSHClient):
             if conn_string['host'] == []:
                 print 'No IP Address found, try Again'
                 return
-            print '--------Hosts--------'
+            table_data = []
+            table_data.append(['Options', 'Hosts'])
             for index, element in enumerate(conn_string['host']):
-                print '(', index + 1, ').', element['ip_address']
-            print '---------------------'
+                table_data.append([str(index + 1), str(element['ip_address'])])
+            table = AsciiTable(table_data)
+            print table.table
             userHostOption = raw_input('Select option to edit: ')
             while not Validations.checkIsInteger(userHostOption):
                 userHostOption = raw_input("Select option to edit: ")
@@ -171,24 +186,35 @@ class HostOptions(ServerEnvironment, SSHClient):
             if conn_string['host'] == []:
                 print 'No IP Address found, try Again'
                 return
-            print '\n--------Hosts--------'
+            table_data = []
+            table_data.append(['Options', 'Hosts', 'Receiver'])
             for index, element in enumerate(conn_string['host']):
-                print '(', index + 1, ')', element['ip_address']
-            print '---------------------'
+                table_data.append([str(index + 1), str(element['ip_address']), str(element['email'])])
+                # print '(', index + 1, ')', element['ip_address']
+            table = AsciiTable(table_data)
+            print table.table
         except (IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Configution not added.'
 
     def updateMail(self):
         try:
-            print '-----Mail Setup------'
+            table_data = []
+            table_data.append(['Mail', 'values'])
             config = MailConfiguration.read_config()
-            print 'SMTP: ', config.get('main', 'smtp')
-            print 'SMTP Port: ', config.get('main', 'smtp_port')
-            print 'Email: ', config.get('main', 'e-mail')
-            print 'Password: **********'
-            print 'Receiver: ', config.get('main', 'receiver')
-            print 'Subject: ', config.get('main', 'subject')
-            print '---------------------'
+            table_data.append(['SMTP', config.get('main', 'smtp')])
+            table_data.append(['SMTP Port', config.get('main', 'smtp_port')])
+            table_data.append(['Email', config.get('main', 'e-mail')])
+            table_data.append(['Password',' **********'])
+            table_data.append(['Receiver', config.get('main', 'receiver')])
+            table_data.append(['Subject', config.get('main', 'subject')])
+            table = AsciiTable(table_data)
+            print table.table
+            # print 'SMTP: ', config.get('main', 'smtp')
+            # print 'SMTP Port: ', config.get('main', 'smtp_port')
+            # print 'Email: ', config.get('main', 'e-mail')
+            # print 'Password: **********'
+            # print 'Receiver: ', config.get('main', 'receiver')
+            # print 'Subject: ', config.get('main', 'subject')
 
             print 'Do you want to edit mail configuration?'
             print '(1) Modify'

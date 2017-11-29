@@ -1,4 +1,4 @@
-import os.path
+import sys
 import paramiko
 import smtplib
 from email.mime.text import MIMEText
@@ -6,8 +6,12 @@ from email.mime.multipart import MIMEMultipart
 import MailConfiguration
 import socket
 import re
+import time
+import Validations
+from multiprocessing.dummy import Pool as ThreadPool
+from Constant import HostConstant
 
-class SSHClient():
+class SSHClient(HostConstant):
     def calculateParallel(self, data, threads=2):
         pool = ThreadPool(threads)
         results = pool.map(self.connect_host, data)
@@ -45,23 +49,32 @@ class SSHClient():
             return
 
     def checkHost(self, server, user, pwd):
+        spinner = Validations.initConst()
+        spinner.start()
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(server, username=user, password=pwd)
+            spinner.stop()
             return 'working'
         except paramiko.BadHostKeyException, e:
+            spinner.stop()
             print e
             return 'Error'
         except paramiko.AuthenticationException, e:
             print e
+            spinner.stop()
             return 'Error'
         except paramiko.SSHException, e:
+            spinner.stop()
             print e
             print 'Error'
         except socket.error as e:
+            spinner.stop()
             print 'socket =', e
             return 'Error'
+        finally:
+            ssh.close()
 
     def connect_host(self, data):
         try:
@@ -69,13 +82,14 @@ class SSHClient():
             # port = data['port']
             ssh = paramiko.SSHClient()
             paramiko.util.log_to_file("ssh.log")
-            print 'connecting host...'
+            sys.stdout.write('connecting host...')
+            time.sleep(2)
+            sys.stdout.flush()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             conn = ssh.connect(server, username=username, password=password)
-            if conn is None:
-                print 'Connection successful.'
-            else:
+            if conn:
                 print 'connection failed'
+            self.startProgress()
             sftp = ssh.open_sftp()
             try:
                 folderPath = str(data['dir_path'])
@@ -109,3 +123,9 @@ class SSHClient():
         except paramiko.AuthenticationException:
             output = "Authentication Failed"
             print output
+
+    def startProgress(self):
+        self.initSpinner().start()
+
+    def stopProgress(self):
+        self.initSpinner().stop()
