@@ -52,9 +52,9 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
             userName = raw_input("\nEnter userName: ")
             while not Validations.checkIsEmpty(userName):
                 userName = raw_input("Please enter the username: ")
-            password = raw_input("Enter password: ")
+            password = getpass.getpass("Enter password: ")
             while not Validations.checkIsEmpty(password):
-                password = raw_input('Please enter the password: ')
+                password = getpass.getpass('Please enter the password: ')
 
             while self.checkHost(ipAddress, userName, password) == 'Error' or '':
                 checkHostOption = raw_input('Error occured, Do you want continue?(y/n)')
