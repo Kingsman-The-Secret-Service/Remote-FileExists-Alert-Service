@@ -6,9 +6,15 @@ import MailConfiguration
 from HostEnv import ServerEnvironment
 from HostSSH import SSHClient
 from terminaltables import AsciiTable
+from DHandler import DbHandler
 import getpass
+from Obj import DataObj
 
-class HostOptions(ServerEnvironment, SSHClient):
+class HostOptions(ServerEnvironment, SSHClient,DbHandler):
+
+    # def __init__(self):
+    #     self.dhandler = DbHandler()
+
 
     def numbers_to_options(self, argument):
         if int(argument) == 1:
@@ -46,9 +52,9 @@ class HostOptions(ServerEnvironment, SSHClient):
             userName = raw_input("\nEnter userName: ")
             while not Validations.checkIsEmpty(userName):
                 userName = raw_input("Please enter the username: ")
-            password = getpass.getpass("Enter password: ")
+            password = raw_input("Enter password: ")
             while not Validations.checkIsEmpty(password):
-                password = getpass.getpass('Please enter the password: ')
+                password = raw_input('Please enter the password: ')
 
             while self.checkHost(ipAddress, userName, password) == 'Error' or '':
                 checkHostOption = raw_input('Error occured, Do you want continue?(y/n)')
@@ -73,36 +79,50 @@ class HostOptions(ServerEnvironment, SSHClient):
                         break
             else:
                 email = ''
-
-            self.addServer(ipAddress, userName, password, port, dir_path, file_name, email)
-            self.createJsonFile()
+            # uname, pwd, port, dpath, fname, email
+            # self.addServer(ipAddress, userName, password, port, dir_path, file_name, email)
+            obj = DataObj(None, ipAddress, userName, password, port, dir_path, file_name, email)
+            DbHandler().saveData(obj)
+            # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
             return
 
     def removeHost(self):  # Remove host
         try:
-            jsonFile = open('test.json', 'r')
-            conn_string = json.load(jsonFile)
+            # jsonFile = open('test.json', 'r')
+            # conn_string = json.load(jsonFile)
             listsHost = []
-            if conn_string['host'] == []:
-                print 'No IP Address found, try Again'
+            hdetails = self.selectQueryMethod()
+            if hdetails == []:
+                print 'No IP Address found, try Againn'
                 return
+            # if conn_string['host'] == []:
+            #     print 'No IP Address found, try Again'
+            #     return
             table_data = []
             table_data.append(['Options', 'Hosts'])
-            for index, element in enumerate(conn_string['host']):
-                # print '(', index + 1, ').', element['ip_address']
-                table_data.append([str(index+1),  str(element['ip_address'])])
-                listsHost.append(str(element['ip_address']))
+            for data in hdetails:
+                table_data.append([str(data.getDid()), str(data.getHost())])
+                listsHost.append(str(data.getHost()))
+            # for index, element in enumerate(conn_string['host']):
+            #     # print '(', index + 1, ').', element['ip_address']
+            #     table_data.append([str(index+1),  str(element['ip_address'])])
+            #     listsHost.append(str(element['ip_address']))
             table = AsciiTable(table_data)
             print table.table
             host = raw_input('Enter the option to remove: ')
             while not Validations.checkIsInteger(host):
-                host = raw_input("Enter the host to remove: ")
+                host = raw_input("Enter the option to remove: ")
+
+            while not any(str(d.getDid()) == str(host) for d in hdetails):
+                host = raw_input("The host not found, Enter the valid option to remove: ")
+
             choice = raw_input('Are you sure, you want to remove?(y/n)')
             while not Validations.checkIsEmpty(choice):
                 choice = raw_input('Do you want to remove?(y/n)')
             if choice == 'y':
-                self.removeHostServer(int(host) - 1)
+                self.removeHostServer(self, host)
+
         except (IOError, IndexError, KeyboardInterrupt):
             print 'Hosts not found'
 

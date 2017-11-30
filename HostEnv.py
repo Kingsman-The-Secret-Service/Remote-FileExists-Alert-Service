@@ -1,8 +1,10 @@
 import os, json
 import JsonFile
+from DHandler import DbHandler
 
 class ServerEnvironment():
     def __init__(self):
+        # super(ServerEnvironment, self).__init__()
         self.ipAddress = ''
         self.username = ''
         self.password = ''
@@ -41,11 +43,12 @@ class ServerEnvironment():
             a['host'].append(datas)
             JsonFile.writeJson(a)
 
-    def removeHostServer(self, index):
+    def removeHostServer(self, obj, index):
         try:
-            data = JsonFile.readJson()
-            del data['host'][index]
-            JsonFile.writeJson(data)
+            obj.deleteData(index)
+            # data = JsonFile.readJson()
+            # del data['host'][index]
+            # JsonFile.writeJson(data)
             print 'Succesfully removed host.\n'
         except (IndexError, IOError):
             print 'Host not found'

@@ -17,4 +17,15 @@ class HostConstant:
     MAIL = '(6) Mail Configuration'
     EXIT = '(7) Exit'
 
+    dbName = 'host.db'
+    did = 'id'
+    tName = 'hostserver'
+    host = 'host'
+    uname = 'username'
+    pwd = 'password'
+    port = 'port'
+    dirpath = 'dir_path'
+    fname ='file_name'
+    email ='email'
+
     ENTER_OPTION = 'Enter the option: '
