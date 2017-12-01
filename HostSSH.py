@@ -1,17 +1,17 @@
 import sys
 import paramiko
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import MailConfiguration
-import socket
 import re
 import time
 import Validations
 from multiprocessing.dummy import Pool as ThreadPool
 from Constant import HostConstant
+from DHandler import DbHandler
 
-class SSHClient(HostConstant):
+class SSHClient(HostConstant, DbHandler):
     def calculateParallel(self, data, threads=2):
         pool = ThreadPool(threads)
         results = pool.map(self.connect_host, data)
@@ -20,16 +20,16 @@ class SSHClient(HostConstant):
         return results
 
     def mailAlert(self, data):
-        config = MailConfiguration.read_config()
-        smtp = config.get('main', 'smtp')
-        smtp_port = config.get('main', 'smtp_port')
-        mail = config.get('main', 'e-mail')
-        password = config.get('main', 'password')
-        subject = config.get('main', 'subject')
+        config = self.readMailData()
+        smtp = config.getSmtp()
+        smtp_port = config.getSmtpPort()
+        mail = config.getEmail()
+        password = config.getPwd()
+        subject = config.getSub()
 
-        receiver = data['email']
+        receiver = data.getEmail()
         if not receiver:
-            receiver = config.get('main', 'receiver')
+            receiver = config.getReceiver()
         try:
             server = smtplib.SMTP(smtp, int(smtp_port))
             server.ehlo()
@@ -78,8 +78,8 @@ class SSHClient(HostConstant):
 
     def connect_host(self, data):
         try:
-            server, username, password = (data['ip_address'], data['username'], data['password'])
-            # port = data['port']
+            server, username, password = (data.getHost(), data.getUname(), data.getPwd())
+            # port = data.getPort()
             ssh = paramiko.SSHClient()
             paramiko.util.log_to_file("ssh.log")
             sys.stdout.write('connecting host...')
@@ -92,10 +92,10 @@ class SSHClient(HostConstant):
             self.startProgress()
             sftp = ssh.open_sftp()
             try:
-                folderPath = str(data['dir_path'])
+                folderPath = str(data.getDpath())
                 list = sftp.listdir(folderPath)
                 if not list == []:
-                    fileExt = str(data['file_name'])
+                    fileExt = str(data.getFname())
                     if not fileExt:
                         self.mailAlert(data)
                     else:

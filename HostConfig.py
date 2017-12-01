@@ -1,21 +1,14 @@
-import json
 import time
-import JsonFile
 import Validations
-import MailConfiguration
-from HostEnv import ServerEnvironment
+from MailConfiguration import Mail
 from HostSSH import SSHClient
 from terminaltables import AsciiTable
 from DHandler import DbHandler
 import getpass
 from Obj import DataObj
+from Constant import HostConstant
 
-class HostOptions(ServerEnvironment, SSHClient,DbHandler):
-
-    # def __init__(self):
-    #     self.dhandler = DbHandler()
-
-
+class HostOptions(SSHClient, DbHandler, Mail):
     def numbers_to_options(self, argument):
         if int(argument) == 1:
             method_name = 'addHost'
@@ -82,7 +75,7 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
             # uname, pwd, port, dpath, fname, email
             # self.addServer(ipAddress, userName, password, port, dir_path, file_name, email)
             obj = DataObj(None, ipAddress, userName, password, port, dir_path, file_name, email)
-            DbHandler().saveData(obj)
+            self.saveData(obj)
             # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
             return
@@ -128,29 +121,35 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
 
     def runHost(self):
         try:
-            conn_string = JsonFile.readJson()
-            if not conn_string or conn_string['host'] == []:
-                print 'No IP Address found, try Again'
+            hdetails = self.selectQueryMethod()
+            if hdetails == []:
+                print 'No IP Address found, try Againn'
                 return
+            # conn_string = JsonFile.readJson()
+            # if not conn_string or conn_string['host'] == []:
+            #     print 'No IP Address found, try Again'
+            #     return
             table_data = []
             table_data.append(['Options', 'Hosts'])
             table_data.append(['0','Run All'])
-            for index, element in enumerate(conn_string['host']):
-                table_data.append([str(index + 1), str(element['ip_address'])])
+            for data in hdetails:
+                table_data.append([str(data.getDid()), str(data.getHost())])
+            # for index, element in enumerate(conn_string['host']):
+            #     table_data.append([str(index + 1), str(element['ip_address'])])
                 # print '(', index + 1, ').', element['ip_address']
             table = AsciiTable(table_data)
             print table.table
-            userAction = raw_input('Enter the option to host: ')
+            userAction = raw_input('Enter the option to connect host: ')
             while not Validations.checkIsInteger(userAction):
-                userAction = raw_input("Enter the option to host: ")
+                userAction = raw_input("Enter the option to connect host: ")
 
             if int(userAction) == 0:
-                list = []
-                for element in conn_string['host']:
-                    list.append(element)
-
-                self.hostWatcherAll(list)
+                # for element in conn_string['host']:
+                #     list.append(element)
+                self.hostWatcherAll(hdetails)
             else:
+                while not any(str(d.getDid()) == str(userAction) for d in hdetails):
+                    userAction = raw_input("Enter the valid option to connect host: ")
                 self.hostWatcher(userAction)
 
         except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
@@ -160,10 +159,11 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
     def hostWatcher(self, index):
         try:
             while True:
-                conn_string = JsonFile.readJson()
-                hostDetails = conn_string['host'][int(index) - 1]
-                self.connect_host(hostDetails)
-                time.sleep(5)
+                hdetails = self.selectMethod(index)
+                # conn_string = JsonFile.readJson()
+                # hostDetails = conn_string['host'][int(index) - 1]
+                self.connect_host(hdetails)
+                time.sleep(10)
         except KeyboardInterrupt:
             self.stopProgress()
             return
@@ -176,41 +176,45 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
                 self.calculateParallel(list, len(list))
                 # for n in squaredNumbers:
                 #     print(n)
-                time.sleep(60)
+                time.sleep(10)
         except KeyboardInterrupt:
             spinner.stop()
             return
 
     def editHostConfiguration(self):
         try:
-            conn_string = JsonFile.readJson()
-            if conn_string['host'] == []:
-                print 'No IP Address found, try Again'
+            hdetails = self.selectQueryMethod()
+            if hdetails == []:
+                print 'No IP Address found, try Againn'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts'])
-            for index, element in enumerate(conn_string['host']):
-                table_data.append([str(index + 1), str(element['ip_address'])])
+            for data in hdetails:
+                table_data.append([str(data.getDid()), str(data.getHost())])
             table = AsciiTable(table_data)
             print table.table
             userHostOption = raw_input('Select option to edit: ')
             while not Validations.checkIsInteger(userHostOption):
                 userHostOption = raw_input("Select option to edit: ")
-            JsonFile.updateJson(int(userHostOption))
+
+            while not any(str(d.getDid()) == str(userHostOption) for d in hdetails):
+                userHostOption = raw_input("Select valid option to edit: ")
+
+            self.updateHostData(userHostOption)
+
         except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Configution not added.'
 
     def viewHost(self):
         try:
-            conn_string = JsonFile.readJson()
-            if conn_string['host'] == []:
-                print 'No IP Address found, try Again'
+            hdetails = self.selectQueryMethod()
+            if hdetails == []:
+                print 'No IP Address found, try Againn'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts', 'Receiver'])
-            for index, element in enumerate(conn_string['host']):
-                table_data.append([str(index + 1), str(element['ip_address']), str(element['email'])])
-                # print '(', index + 1, ')', element['ip_address']
+            for data in hdetails:
+                table_data.append([str(data.getDid()), str(data.getHost()), str(data.getEmail())])
             table = AsciiTable(table_data)
             print table.table
         except (IOError, KeyboardInterrupt, AttributeError, TypeError):
@@ -220,21 +224,17 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
         try:
             table_data = []
             table_data.append(['Mail', 'values'])
-            config = MailConfiguration.read_config()
-            table_data.append(['SMTP', config.get('main', 'smtp')])
-            table_data.append(['SMTP Port', config.get('main', 'smtp_port')])
-            table_data.append(['Email', config.get('main', 'e-mail')])
+            config = self.readMailData()
+            if config is None:
+                return
+            table_data.append(['SMTP', config.getSmtp()])
+            table_data.append(['SMTP Port', config.getSmtpPort()])
+            table_data.append(['Email', config.getEmail()])
             table_data.append(['Password',' **********'])
-            table_data.append(['Receiver', config.get('main', 'receiver')])
-            table_data.append(['Subject', config.get('main', 'subject')])
+            table_data.append(['Receiver', config.getReceiver()])
+            table_data.append(['Subject', config.getSub()])
             table = AsciiTable(table_data)
             print table.table
-            # print 'SMTP: ', config.get('main', 'smtp')
-            # print 'SMTP Port: ', config.get('main', 'smtp_port')
-            # print 'Email: ', config.get('main', 'e-mail')
-            # print 'Password: **********'
-            # print 'Receiver: ', config.get('main', 'receiver')
-            # print 'Subject: ', config.get('main', 'subject')
 
             print 'Do you want to edit mail configuration?'
             print '(1) Modify'
@@ -244,8 +244,148 @@ class HostOptions(ServerEnvironment, SSHClient,DbHandler):
                 uMailInput = raw_input("Please enter the option: ")
 
             if int(uMailInput) == 1:
-                MailConfiguration.configMail()
+                self.configMail(self,config.getEmail())
             else:
                 return
         except KeyboardInterrupt:
             return
+
+    def removeHostServer(self, obj, index):
+        try:
+            obj.deleteData(index)
+            print 'Succesfully removed host.\n'
+        except (IndexError, IOError):
+            print 'Host not found'
+
+    def updateHostData(self, option):
+        try:
+            obj = self.selectMethod(option)
+            # conn_string = JsonFile.readJson()
+            # hostValues = conn_string[hostStr][index]
+            table_data = []
+            table_data.append(['Mail', 'Values'])
+            table_data.append(['Username', obj.getUname()])
+            table_data.append(['Password', ' *******'])
+            table_data.append(['Host', obj.getHost()])
+            table_data.append(['Port', obj.getPort()])
+            table_data.append(['Directory Path', obj.getDpath()])
+            table_data.append(['File Name', obj.getFname()])
+            table_data.append(['E-mail', obj.getEmail()])
+            table = AsciiTable(table_data)
+            print table.table
+        except IndexError:
+            print 'Host not exist'
+        print '---------------------'
+        print '(1) Username'
+        print '(2) Password'
+        print '(3) Host'
+        print '(4) Port'
+        print '(5) Directory Path'
+        print '(6) File Name'
+        print '(7) E-mail'
+        print '(8) All'
+        print '(9) Exit'
+        print '---------------------'
+        try:
+            userSelectedHost = raw_input('Select option to update: ')
+            while not Validations.checkIsInteger(userSelectedHost):
+                userSelectedHost = raw_input("Select option to update: ")
+            if int(userSelectedHost) == 1:
+                self.updateHostConfigs(option, 'Username', HostConstant.uname)
+            if int(userSelectedHost) == 2:
+                self.updateHostConfigs(option, 'Password', HostConstant.pwd)
+            if int(userSelectedHost) == 3:
+                self.updateHostConfigs(option, 'Host', HostConstant.host)
+            if int(userSelectedHost) == 4:
+                self.updateHostConfigs(option, 'Port', HostConstant.port)
+            if int(userSelectedHost) == 5:
+                self.updateHostConfigs(option, 'Directory Path', HostConstant.dirpath)
+            if int(userSelectedHost) == 6:
+                self.updateHostConfigs(option, 'File name', HostConstant.fname)
+            if int(userSelectedHost) == 7:
+                self.updateHostConfigs(option, 'E-mail', HostConstant.email)
+            if int(userSelectedHost) == 8:
+                self.updateAllConfigs(option)
+            else:
+                raise IndexError
+
+        except IndexError as e:
+            print e
+
+    def updateHostConfigs(self, index, obj, column):
+        # conn_string = readJson()
+        # tmp = conn_string["host"][index]
+        if column == HostConstant.pwd:
+            userValue = getpass.getpass("Enter the " + obj + " value: ")
+        else:
+            userValue = raw_input("Enter the " + obj + " value: ")
+
+        if column == HostConstant.host:
+            while not Validations.checkIsEmpty(userValue):
+                userValue = raw_input("Enter the valid host: ")
+
+            while not Validations.isServerUp(userValue):
+                ipHost = raw_input('The entered host is server down. Do you want to continue? (y/n)')
+                if ipHost == 'y':
+                    break
+                else:
+                    userValue = raw_input("Enter the valid host: ")
+        elif column == HostConstant.email:
+            if userValue:
+                while not Validations.checkEmail(userValue):
+                    userValue = raw_input('Enter the valid email address.: ')
+                    if not userValue:
+                        break
+            else:
+                userValue = ''
+        self.updateData(column, userValue, index)
+
+    def updateAllConfigs(self, index):
+        userNameValue = raw_input('Enter the username: ')
+        while not Validations.checkIsEmpty(userNameValue):
+            userNameValue = raw_input('Please enter the username: ')
+
+        passwordValue = raw_input('Enter the password: ')
+        while not Validations.checkIsEmpty(passwordValue):
+            passwordValue = raw_input('Please enter the password: ')
+
+        ipAddress = raw_input('Enter the Host: ')
+        # while not Validations.checkIp(ip_addressValue):
+        #     ip_addressValue = raw_input("Enter the valid host: ")
+        while not Validations.checkIsEmpty(ipAddress):
+            ipAddress = raw_input("Enter the valid ip address: ")
+
+        while not Validations.isServerUp(ipAddress):
+            ipHost = raw_input('The entered host is server down. Do you want to continue? (y/n)')
+            if ipHost == 'y':
+                return
+            else:
+                ipAddress = raw_input("Enter the valid ip address: ")
+
+        while self.checkHost(ipAddress, userNameValue, passwordValue) == 'Error':
+            checkHostOption = raw_input('The host   do you want continue?(y/n)')
+            if checkHostOption == 'n':
+                return
+            else:
+                break
+
+        portValue = raw_input('Enter the port: ')
+        if not portValue:
+            portValue = '22'
+
+        dir_path = raw_input("Enter the directory path. (ex.:/home/user/): ")
+        while not Validations.checkIsEmpty(dir_path):
+            dir_path = raw_input('Please enter the directory path: ')
+        file_name = raw_input("(Optional)Enter the file name. (ex:*.txt): ")
+        if not file_name:
+            file_name = ''
+        email = raw_input("Enter the email: ")
+        if email:
+            while not Validations.checkEmail(email):
+                email = raw_input('Enter the valid email address.: ')
+                if not email:
+                    break
+        else:
+            email = ''
+        self.updateAllData(ipAddress, userNameValue, passwordValue, portValue, dir_path, file_name, email, index)
+        print 'Updated successfully.'

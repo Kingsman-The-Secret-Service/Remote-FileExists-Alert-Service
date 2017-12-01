@@ -1,9 +1,7 @@
 import json
 import time
-import JsonFile
 import Validations
-import MailConfiguration
-from HostEnv import ServerEnvironment
+from MailConfiguration import Mail
 from HostSSH import SSHClient
 from HostConfig import HostOptions
 from Constant import HostConstant
@@ -12,7 +10,8 @@ def main():
     try:
         exitValue = True
         while exitValue:
-            MailConfiguration.initSetup()
+            m = Mail()
+            m.initSetup()
             print '---------------------'
             print HostConstant.ADD
             print HostConstant.REMOVE

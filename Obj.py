@@ -56,3 +56,30 @@ class DataObj(object):
 
     def setEmail(self, email):
         self._email = email
+
+class MailData:
+    def __init__(self, smtp, port, email, pwd, receiver, sub):
+        self._smpt = smtp
+        self._port = port
+        self._email = email
+        self._pwd = pwd
+        self._receiver = receiver
+        self._sub = sub
+
+    def getSmtp(self):
+        return self._smpt
+
+    def getSmtpPort(self):
+        return self._port
+
+    def getEmail(self):
+        return self._email
+
+    def getPwd(self):
+        return self._pwd
+
+    def getReceiver(self):
+        return self._receiver
+
+    def getSub(self):
+        return self._sub

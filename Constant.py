@@ -28,4 +28,10 @@ class HostConstant:
     fname ='file_name'
     email ='email'
 
+    mTName = 'mail_config'
+    smtp = 'smtp'
+    smtp_port = 'smtp_port'
+    receiver = 'receiver'
+    sub = 'subject'
+
     ENTER_OPTION = 'Enter the option: '
