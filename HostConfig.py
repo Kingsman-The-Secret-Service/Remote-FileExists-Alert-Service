@@ -87,7 +87,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
             listsHost = []
             hdetails = self.selectQueryMethod()
             if hdetails == []:
-                print 'No IP Address found, try Againn'
+                print 'No IP Address found, try Again'
                 return
             # if conn_string['host'] == []:
             #     print 'No IP Address found, try Again'
@@ -123,7 +123,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         try:
             hdetails = self.selectQueryMethod()
             if hdetails == []:
-                print 'No IP Address found, try Againn'
+                print 'No IP Address found, try Again'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts'])
@@ -193,7 +193,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         try:
             hdetails = self.selectQueryMethod()
             if hdetails == []:
-                print 'No IP Address found, try Againn'
+                print 'No IP Address found, try Again'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts'])
@@ -217,7 +217,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         try:
             hdetails = self.selectQueryMethod()
             if hdetails == []:
-                print 'No IP Address found, try Againn'
+                print 'No IP Address found, try Again'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts', 'Receiver'])
