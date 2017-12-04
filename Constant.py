@@ -27,6 +27,7 @@ class HostConstant:
     dirpath = 'dir_path'
     fname ='file_name'
     email ='email'
+    fwatch = 'f_watcher'
 
     mTName = 'mail_config'
     smtp = 'smtp'

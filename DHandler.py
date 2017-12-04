@@ -17,7 +17,8 @@ class DbHandler:
                                          ''' + HostConstant.port + ''' INT,\
                                          ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
                                          ''' + HostConstant.fname + ''' TEXT,\
-                                         ''' + HostConstant.email + ''' TEXT);''')
+                                          ''' + HostConstant.email + ''' TEXT,\
+                                         ''' + HostConstant.fwatch + ''' TEXT);''')
 
         conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
                                                   (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
@@ -30,7 +31,7 @@ class DbHandler:
 
     def saveData(self, obj):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj.getHost()+"', '"+obj.getUname()+"', '"+obj.getPwd()+"',"+obj.getPort()+",'"+obj.getDpath()+"','"+obj.getFname()+"','"+obj.getEmail()+"' )")
+        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj.getHost()+"', '"+obj.getUname()+"', '"+obj.getPwd()+"',"+obj.getPort()+",'"+obj.getDpath()+"','"+obj.getFname()+"','"+obj.getEmail()+"','"+obj.getFwatch()+"' )")
         conn.commit()
         conn.close()
 
@@ -46,6 +47,21 @@ class DbHandler:
         conn.commit()
         conn.close()
 
+    def updateFileData(self,fileData, host):
+        conn = self.connectDb()
+        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.fwatch+" = '"+fileData+"' where  "+HostConstant.host+" = '"+host+"'")
+        conn.commit()
+        conn.close()
+
+    def readFileData(self,host):
+        conn = self.connectDb()
+        cursor = conn.execute("SELECT " + HostConstant.fwatch +" FROM "+ HostConstant.tName+ " WHERE " + HostConstant.host + " = '" + host + "'")
+        mylist = cursor.fetchone()
+        myFS = mylist[0]
+        cursor.close()
+        conn.close()
+        return myFS
+
     def deleteData(self, did):
         conn = self.connectDb()
         conn.execute("DELETE from "+HostConstant.tName+" where  "+HostConstant.did+" = "+str(did)+";")
@@ -57,7 +73,7 @@ class DbHandler:
         list = []
         cursor = conn.execute('SELECT '+HostConstant.did+', '+HostConstant.host+', '+HostConstant.uname+', '+HostConstant.pwd+', '+HostConstant.port+','+HostConstant.dirpath+','+HostConstant.fname+','+HostConstant.email+' from '+HostConstant.tName)
         for row in cursor:
-            dbObj = DataObj(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+            dbObj = DataObj(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7],'')
             list.append(dbObj)
         cursor.close()
         conn.close()
@@ -67,7 +83,7 @@ class DbHandler:
         conn = self.connectDb()
         cursor = conn.execute('SELECT '+HostConstant.did+','+HostConstant.host+', '+HostConstant.uname+', '+HostConstant.pwd+', '+HostConstant.port+','+HostConstant.dirpath+','+HostConstant.fname+','+HostConstant.email+' from '+HostConstant.tName +' where '+HostConstant.did+' = '+did)
         mylist = cursor.fetchone()
-        dbObj = DataObj(mylist[0],mylist[1],mylist[2],str(mylist[3]),str(mylist[4]),mylist[5],mylist[6],mylist[7])
+        dbObj = DataObj(mylist[0],mylist[1],mylist[2],str(mylist[3]),str(mylist[4]),mylist[5],mylist[6],mylist[7],'')
         cursor.close()
         conn.close()
         return dbObj

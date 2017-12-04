@@ -74,7 +74,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 email = ''
             # uname, pwd, port, dpath, fname, email
             # self.addServer(ipAddress, userName, password, port, dir_path, file_name, email)
-            obj = DataObj(None, ipAddress, userName, password, port, dir_path, file_name, email)
+            obj = DataObj(None, ipAddress, userName, password, port, dir_path, file_name, email,'')
             self.saveData(obj)
             # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
@@ -125,32 +125,41 @@ class HostOptions(SSHClient, DbHandler, Mail):
             if hdetails == []:
                 print 'No IP Address found, try Againn'
                 return
-            # conn_string = JsonFile.readJson()
-            # if not conn_string or conn_string['host'] == []:
-            #     print 'No IP Address found, try Again'
-            #     return
             table_data = []
             table_data.append(['Options', 'Hosts'])
             table_data.append(['0','Run All'])
-            for data in hdetails:
+            listIndex = []
+            for index, data in enumerate(hdetails):
+                index = index +1
                 table_data.append([str(data.getDid()), str(data.getHost())])
-            # for index, element in enumerate(conn_string['host']):
-            #     table_data.append([str(index + 1), str(element['ip_address'])])
-                # print '(', index + 1, ').', element['ip_address']
+                listIndex.append(str(index))
             table = AsciiTable(table_data)
             print table.table
             userAction = raw_input('Enter the option to connect host: ')
-            while not Validations.checkIsInteger(userAction):
-                userAction = raw_input("Enter the option to connect host: ")
-
-            if int(userAction) == 0:
-                # for element in conn_string['host']:
-                #     list.append(element)
-                self.hostWatcherAll(hdetails)
+            if Validations.checkIsInteger(userAction):
+                if int(userAction) == 0:
+                    self.hostWatcherAll(hdetails)
+                else:
+                    while not any(str(d.getDid()) == str(userAction) for d in hdetails):
+                        userAction = raw_input("Enter the valid option to connect host: ")
+                    self.hostWatcher(userAction)
             else:
-                while not any(str(d.getDid()) == str(userAction) for d in hdetails):
-                    userAction = raw_input("Enter the valid option to connect host: ")
-                self.hostWatcher(userAction)
+                numbers = userAction.split(',')
+                new_list = []
+                hdAll = []
+                for element in numbers:
+                    if element in listIndex:
+                        hdAll.append(hdetails[int(element) -1])
+                        new_list.append(element)
+                    else:
+                        print 'The selected options are not available ='+element
+                print hdAll
+                if hdAll:
+                    self.hostWatcherAll(hdAll)
+
+            # while not Validations.checkIsInteger(userAction):
+            #     userAction = raw_input("Enter the option to connect host: ")
+
 
         except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Host not found'
@@ -160,25 +169,24 @@ class HostOptions(SSHClient, DbHandler, Mail):
         try:
             while True:
                 hdetails = self.selectMethod(index)
-                # conn_string = JsonFile.readJson()
-                # hostDetails = conn_string['host'][int(index) - 1]
                 self.connect_host(hdetails)
                 time.sleep(10)
         except KeyboardInterrupt:
             self.stopProgress()
+            print 'Host watching stopped'
             return
 
     def hostWatcherAll(self, list):
-        spinner = Validations.initConst()
+        # spinner = Validations.initConst()
         try:
-            spinner.start()
+            # spinner.start()
+            self.startProgress()
             while True:
                 self.calculateParallel(list, len(list))
-                # for n in squaredNumbers:
-                #     print(n)
                 time.sleep(10)
         except KeyboardInterrupt:
-            spinner.stop()
+            self.stopProgress()
+            print 'Host watching stopped'
             return
 
     def editHostConfiguration(self):

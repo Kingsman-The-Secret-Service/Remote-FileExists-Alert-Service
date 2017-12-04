@@ -1,5 +1,5 @@
 class DataObj(object):
-    def __init__(self, did, host, uname, pwd, port, dpath, fname, email):
+    def __init__(self, did, host, uname, pwd, port, dpath, fname, email, fwatch):
         self._did = did
         self._host = host
         self._uname = uname
@@ -8,6 +8,7 @@ class DataObj(object):
         self._dpath = dpath
         self._fname = fname
         self._email = email
+        self._fwatch = fwatch
 
     def getDid(self):
         return self._did
@@ -56,6 +57,12 @@ class DataObj(object):
 
     def setEmail(self, email):
         self._email = email
+
+    def getFwatch(self):
+        return self._fwatch
+
+    def setFwatch(self, fwatch):
+        self._fwatch = fwatch
 
 class MailData:
     def __init__(self, smtp, port, email, pwd, receiver, sub):

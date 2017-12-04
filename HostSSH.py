@@ -12,7 +12,7 @@ from Constant import HostConstant
 from DHandler import DbHandler
 
 class SSHClient(HostConstant, DbHandler):
-    def calculateParallel(self, data, threads=2):
+    def calculateParallel(self, data, threads):
         pool = ThreadPool(threads)
         results = pool.map(self.connect_host, data)
         pool.close()
@@ -81,7 +81,7 @@ class SSHClient(HostConstant, DbHandler):
             server, username, password = (data.getHost(), data.getUname(), data.getPwd())
             # port = data.getPort()
             ssh = paramiko.SSHClient()
-            paramiko.util.log_to_file("ssh.log")
+            # paramiko.util.log_to_file("ssh.log")
             sys.stdout.write('connecting host...')
             time.sleep(2)
             sys.stdout.flush()
@@ -95,6 +95,15 @@ class SSHClient(HostConstant, DbHandler):
                 folderPath = str(data.getDpath())
                 list = sftp.listdir(folderPath)
                 if not list == []:
+                    list.sort()
+                    myString = ",".join(list)
+                    # print myString
+                    myFs = self.readFileData(data.getHost())
+                    if myFs == myString:
+                        return
+                    else:
+                        self.updateFileData(myString, data.getHost())
+
                     fileExt = str(data.getFname())
                     if not fileExt:
                         self.mailAlert(data)
@@ -103,7 +112,6 @@ class SSHClient(HostConstant, DbHandler):
                         filtered_files = [f for f in list if patern.search(f)]
                         if filtered_files == []:
                             if any(fileExt in s for s in list):
-                                # print 'yes'
                                 self.mailAlert(data)
                             else:
                                 print 'No'
@@ -111,11 +119,15 @@ class SSHClient(HostConstant, DbHandler):
                             self.mailAlert(data)
                             print filtered_files
                 else:
-                    print 'No files in this directory.'
-                    # for element in list:
-                    #     print '=', element
+                    sys.stdout.write('No files in this directory.')
+                    time.sleep(2)
+                    sys.stdout.flush()
+                    # print 'No files in this directory.'
             except IOError as e:
-                print e
+                sys.stdout.write(str(e))
+                time.sleep(2)
+                sys.stdout.flush()
+                # print e
                 return
             finally:
                 sftp.close()
