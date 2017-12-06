@@ -72,9 +72,8 @@ class HostOptions(SSHClient, DbHandler, Mail):
                         break
             else:
                 email = ''
-            # uname, pwd, port, dpath, fname, email
-            # self.addServer(ipAddress, userName, password, port, dir_path, file_name, email)
-            obj = DataObj(None, ipAddress, userName, password, port, dir_path, file_name, email,'')
+            pwd = self.encryptpwd(password)
+            obj = DataObj(None, ipAddress, userName, pwd, port, dir_path, file_name, email,'')
             self.saveData(obj)
             # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
@@ -144,48 +143,49 @@ class HostOptions(SSHClient, DbHandler, Mail):
                         userAction = raw_input("Enter the valid option to connect host: ")
                     self.hostWatcher(userAction)
             else:
-                numbers = userAction.split(',')
-                new_list = []
-                hdAll = []
-                for element in numbers:
-                    if element in listIndex:
-                        hdAll.append(hdetails[int(element) -1])
-                        new_list.append(element)
-                    else:
-                        print 'The selected options are not available ='+element
-                print hdAll
-                if hdAll:
-                    self.hostWatcherAll(hdAll)
-
-            # while not Validations.checkIsInteger(userAction):
-            #     userAction = raw_input("Enter the option to connect host: ")
-
-
+                try:
+                    numbers = userAction.split(',')
+                    new_list = []
+                    hdAll = []
+                    for element in numbers:
+                        if element in listIndex:
+                            hdAll.append(hdetails[int(element) -1])
+                            new_list.append(element)
+                        else:
+                            print 'The selected options are not available ='+element
+                    if hdAll:
+                        self.hostWatcherAll(hdAll)
+                except TypeError:
+                    print 'Enter the valid hosts.'
+                    return
         except (IndexError, IOError, KeyboardInterrupt, AttributeError, TypeError):
             print 'Host not found'
             return
 
     def hostWatcher(self, index):
         try:
+            hdetails = self.selectMethod(index)
+            self.updateFileData('', hdetails.getHost())
             while True:
-                hdetails = self.selectMethod(index)
                 self.connect_host(hdetails)
                 time.sleep(10)
         except KeyboardInterrupt:
             self.stopProgress()
+            hdetails = self.selectMethod(index)
+            self.updateFileData('', hdetails.getHost())
             print 'Host watching stopped'
             return
 
     def hostWatcherAll(self, list):
-        # spinner = Validations.initConst()
         try:
-            # spinner.start()
             self.startProgress()
             while True:
                 self.calculateParallel(list, len(list))
                 time.sleep(10)
         except KeyboardInterrupt:
             self.stopProgress()
+            for h in list:
+                self.updateFileData('', h.getHost())
             print 'Host watching stopped'
             return
 
@@ -321,10 +321,9 @@ class HostOptions(SSHClient, DbHandler, Mail):
             print e
 
     def updateHostConfigs(self, index, obj, column):
-        # conn_string = readJson()
-        # tmp = conn_string["host"][index]
         if column == HostConstant.pwd:
             userValue = getpass.getpass("Enter the " + obj + " value: ")
+            userValue = self.encryptpwd(userValue)
         else:
             userValue = raw_input("Enter the " + obj + " value: ")
 
@@ -353,9 +352,9 @@ class HostOptions(SSHClient, DbHandler, Mail):
         while not Validations.checkIsEmpty(userNameValue):
             userNameValue = raw_input('Please enter the username: ')
 
-        passwordValue = raw_input('Enter the password: ')
+        passwordValue = getpass.getpass('Enter the password: ')
         while not Validations.checkIsEmpty(passwordValue):
-            passwordValue = raw_input('Please enter the password: ')
+            passwordValue = getpass.getpass('Please enter the password: ')
 
         ipAddress = raw_input('Enter the Host: ')
         # while not Validations.checkIp(ip_addressValue):
@@ -395,5 +394,6 @@ class HostOptions(SSHClient, DbHandler, Mail):
                     break
         else:
             email = ''
-        self.updateAllData(ipAddress, userNameValue, passwordValue, portValue, dir_path, file_name, email, index)
+        pwd = self.encryptpwd(passwordValue)
+        self.updateAllData(ipAddress, userNameValue, pwd, portValue, dir_path, file_name, email, index)
         print 'Updated successfully.'

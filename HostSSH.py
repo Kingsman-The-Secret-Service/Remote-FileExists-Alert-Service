@@ -78,7 +78,8 @@ class SSHClient(HostConstant, DbHandler):
 
     def connect_host(self, data):
         try:
-            server, username, password = (data.getHost(), data.getUname(), data.getPwd())
+            pwd = self.decryptpwd(data.getPwd())
+            server, username, password = (data.getHost(), data.getUname(), pwd)
             # port = data.getPort()
             ssh = paramiko.SSHClient()
             # paramiko.util.log_to_file("ssh.log")
