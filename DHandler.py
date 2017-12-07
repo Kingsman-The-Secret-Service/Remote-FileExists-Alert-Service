@@ -1,32 +1,35 @@
+import os
 import sqlite3
 from Constant import HostConstant
 from Obj import DataObj, MailData
 
 class DbHandler:
-
     def connectDb(self):
         return sqlite3.connect('host.db')
 
     def __init__(self):
+        dbExists = os.path.exists('host.db')
         conn = self.connectDb()
-        conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.tName + '''\
-                                          (''' + HostConstant.did + ''' Integer PRIMARY KEY AUTOINCREMENT,\
-                                         ''' + HostConstant.host + ''' TEXT NOT NULL,\
-                                         ''' + HostConstant.uname + ''' TEXT NOT NULL,\
-                                         ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
-                                         ''' + HostConstant.port + ''' INT,\
-                                         ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
-                                         ''' + HostConstant.fname + ''' TEXT,\
-                                          ''' + HostConstant.email + ''' TEXT,\
-                                         ''' + HostConstant.fwatch + ''' TEXT);''')
 
-        conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
-                                                  (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
-                                                 ''' + HostConstant.smtp_port + ''' TEXT NOT NULL,\
-                                                 ''' + HostConstant.email + ''' TEXT NOT NULL,\
-                                                 ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
-                                                 ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
-                                                 ''' + HostConstant.sub + ''' TEXT);''')
+        if not dbExists:
+            conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.tName + '''\
+                                              (''' + HostConstant.did + ''' Integer PRIMARY KEY AUTOINCREMENT,\
+                                             ''' + HostConstant.host + ''' TEXT NOT NULL,\
+                                             ''' + HostConstant.uname + ''' TEXT NOT NULL,\
+                                             ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
+                                             ''' + HostConstant.port + ''' INT,\
+                                             ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
+                                             ''' + HostConstant.fname + ''' TEXT,\
+                                              ''' + HostConstant.email + ''' TEXT,\
+                                             ''' + HostConstant.fwatch + ''' TEXT);''')
+
+            conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
+                                                      (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.smtp_port + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.email + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.sub + ''' TEXT);''')
 
 
     def saveData(self, obj):
