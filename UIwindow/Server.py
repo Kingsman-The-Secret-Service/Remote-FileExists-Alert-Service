@@ -13,6 +13,20 @@ class server(UiSample):
         self.serverData = QStandardItemModel()
         self.serverData.setHorizontalHeaderLabels(["Server List"])
         self.treeView.setModel(self.serverData)
+        self.dhandler = DbHandler()
+        data = self.dbHandler.getServerGrouped()
+
+        for group in data:
+            serverGroup = QStandardItem(group)
+            serverGroup.setData(json.dumps({'hostname': group, 'count': data[group]['count']}))
+            # for host in data[group]['list']:
+            #     serverDetails = QStandardItem(host[1])
+            #     jsonDubmps = json.dumps(
+            #         {'hostname': host[1], 'username': host[2],
+            #          'password': host[3], 'port': host[4]})
+            #     serverDetails.setData(jsonDubmps)
+            #     serverGroup.appendRow(serverDetails)
+            self.serverData.appendRow(serverGroup)
 
     def addServer(self):
         if self.mainWindow.sender().objectName() == 'MainMenuAddServer':
@@ -32,15 +46,19 @@ class server(UiSample):
         formLayout.setWidget(0, QFormLayout.LabelRole, groupLabel)
         hostLabel = QLabel(formwidget)
         hostLabel.setText("Hostname/IP")
+        hostLabel.setToolTip('Hostname/IP')
         formLayout.setWidget(1, QFormLayout.LabelRole, hostLabel)
         userLabel = QLabel(formwidget)
-        userLabel.setText("Username: ")
+        userLabel.setText("Username ")
+        userLabel.setToolTip('Username')
         formLayout.setWidget(2, QFormLayout.LabelRole, userLabel)
         pwdLabel = QLabel(formwidget)
         pwdLabel.setText("Password: ")
+        pwdLabel.setToolTip('Password')
         formLayout.setWidget(3, QFormLayout.LabelRole, pwdLabel)
         portLabel = QLabel(formwidget)
         portLabel.setText("Port: ")
+        portLabel.setToolTip('Port')
         formLayout.setWidget(4, QFormLayout.LabelRole, portLabel)
 
         self.groupnameField = QLineEdit(formwidget)
@@ -90,7 +108,6 @@ class server(UiSample):
     def saveServer(self):
         groupname = self.groupnameField.text()
         newServerData = {
-            # 'groupname': groupname,
             'hostname': self.hostnameField.text(),
             'username': self.usernameField.text(),
             'password': self.passwordField.text(),
@@ -99,16 +116,15 @@ class server(UiSample):
 
         if not self.validateServerFormOnSubmit(newServerData):
             reply = None
-            sshclient= self.ssh.checkHost(newServerData['hostname'], newServerData['username'],
-                                     newServerData['password'])
+            ssh, error = self.ssh.checkHost(newServerData)
 
-            if sshclient == 'Error':
+            if error:
                 reply = QMessageBox.question(self.mainWindow, 'Message',
                                              "Failed to connect the server <b>" + newServerData[
                                                  'hostname'] + "</b>, Still wanna save the server details?",
                                              QMessageBox.Yes, QMessageBox.No)
 
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.Yes or not error:
                 pwd =  self.constant.encryptpwd(newServerData['password'])
                 obj = DataObj(None, newServerData['hostname'], newServerData['username'], pwd, newServerData['port'], '/home/ravi/sample', '', '', '')
                 self.dbHandler.saveData(obj)
@@ -122,6 +138,22 @@ class server(UiSample):
                 self.qdialog.close()
                 QMessageBox.information(self.mainWindow, 'Warning', "Server details has been saved successfully",
                                         QMessageBox.Ok)
+
+    def editServer(self):
+        print ''
+
+    def removeServer(self):
+        index = self.treeView.selectedIndexes()[0]
+        crawler = index.model().itemFromIndex(index)
+        hostname = self.treeView.model().itemFromIndex(index).text()
+
+        reply = QMessageBox.question(self.mainWindow, 'Message',
+                                     "Deleting the group <b>" + hostname + "</b> delete all server from it, are you sure wanna do it?",
+                                     QMessageBox.Yes, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.dhandler.deleteHostData(hostname)
+            self.generateTree()
 
     def domainOrIpRegex(self):
         ip = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"

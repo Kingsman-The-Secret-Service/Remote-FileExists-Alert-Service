@@ -45,16 +45,25 @@ class HostOptions(SSHClient, DbHandler, Mail):
             userName = raw_input("\nEnter userName: ")
             while not Validations.checkIsEmpty(userName):
                 userName = raw_input("Please enter the username: ")
-            password = getpass.getpass("Enter password: ")
+            password = raw_input("Enter password: ")
             while not Validations.checkIsEmpty(password):
-                password = getpass.getpass('Please enter the password: ')
+                password = raw_input('Please enter the password: ')
 
-            while self.checkHost(ipAddress, userName, password) == 'Error' or '':
-                checkHostOption = raw_input('Error occured, Do you want continue?(y/n)')
+            newServerData = {
+                'env':'cli',
+                'hostname': ipAddress,
+                'username': userName,
+                'password': password,
+            }
+
+            self.startProgress()
+            ssh, error = self.checkHost(newServerData)
+            if error:
+                checkHostOption = raw_input('Failed to connect the server, Do you want continue?(y/n)')
                 if checkHostOption == 'n':
                     return
-                else:
-                    break
+            self.stopProgress()
+
 
             port = raw_input("Enter port: ")
             if not port:
@@ -369,12 +378,21 @@ class HostOptions(SSHClient, DbHandler, Mail):
             else:
                 ipAddress = raw_input("Enter the valid ip address: ")
 
-        while self.checkHost(ipAddress, userNameValue, passwordValue) == 'Error':
-            checkHostOption = raw_input('The host   do you want continue?(y/n)')
+        hostData = {
+            'env': 'cli',
+            'hostname': ipAddress,
+            'username': userNameValue,
+            'password': passwordValue,
+        }
+
+        self.startProgress()
+        ssh, error = self.checkHost(hostData)
+        if error:
+            checkHostOption = raw_input('Failed to connect the server, Do you want continue?(y/n)')
             if checkHostOption == 'n':
                 return
-            else:
-                break
+
+        self.stopProgress()
 
         portValue = raw_input('Enter the port: ')
         if not portValue:

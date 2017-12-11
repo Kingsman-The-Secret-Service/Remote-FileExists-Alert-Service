@@ -48,33 +48,41 @@ class SSHClient(HostConstant, DbHandler):
             print e
             return
 
-    def checkHost(self, server, user, pwd):
-        spinner = Validations.initConst()
-        spinner.start()
+    def checkHost(self, hostData):
+        error = None
+        # spinner = Validations.initConst()
+        # spinner.start()
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(server, username=user, password=pwd)
-            spinner.stop()
-            return 'working'
-        except paramiko.BadHostKeyException, e:
-            spinner.stop()
+            ssh.connect(hostData['hostname'], username=hostData['username'], password=hostData['password'])
+            # spinner.stop()
+        except Exception as e:
+            if hostData['env'] == 'cli':
+                self.stopProgress()
             print e
-            return 'Error'
-        except paramiko.AuthenticationException, e:
-            print e
-            spinner.stop()
-            return 'Error'
-        except paramiko.SSHException, e:
-            spinner.stop()
-            print e
-            print 'Error'
-        except socket.error as e:
-            spinner.stop()
-            print 'socket =', e
-            return 'Error'
+            error = True
+
         finally:
             ssh.close()
+        return ssh, error
+        # except paramiko.BadHostKeyException, e:
+        #     spinner.stop()
+        #     print e
+        #     return 'Error'
+        # except paramiko.AuthenticationException, e:
+        #     print e
+        #     spinner.stop()
+        #     return 'Error'
+        # except paramiko.SSHException, e:
+        #     spinner.stop()
+        #     print e
+        #     print 'Error'
+        # except socket.error as e:
+        #     spinner.stop()
+        #     print 'socket =', e
+        #     return 'Error'
+
 
     def connect_host(self, data):
         try:

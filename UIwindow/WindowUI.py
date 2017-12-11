@@ -2,9 +2,9 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
-from HostSSH import *
 from DHandler import *
-from Constant import *
+import json
+from HostSSH import SSHClient
 
 class UiSample(object):
     width = 900
@@ -12,7 +12,6 @@ class UiSample(object):
 
     def __init__(self):
         super(UiSample, self).__init__()
-
         self.initUI()
 
     def initUI(self):
@@ -118,15 +117,20 @@ class UiSample(object):
 
         menu = QMenu()
         if level == 0:
-            menu.addAction("Add Server")
+            menu.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
             menu.addSeparator()
-            menu.addAction("Remove Group")
+            menu.addAction("Remove Group", self.removeServer)
+            menu.addAction("Run")
+            # menu.addAction("Summary")
+            # menu.addAction("Ftp")
+            menu.addSeparator()
+            menu.addAction("Edit Server")
         elif level == 1:
             menu.addAction("Summary")
             menu.addAction("Ftp")
             menu.addSeparator()
-            menu.addAction("Edit Server", self.editServer)
-            menu.addAction("Remove Server", self.removeServer)
+            menu.addAction("Edit Server")
+            menu.addAction("Remove Server")
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
     def statusBar(self):

@@ -71,6 +71,12 @@ class DbHandler:
         conn.commit()
         conn.close()
 
+    def deleteHostData(self, host):
+        conn = self.connectDb()
+        conn.execute("DELETE from "+HostConstant.tName+" where  "+HostConstant.host+" = '"+ host +"'")
+        conn.commit()
+        conn.close()
+
     def selectQueryMethod(self):
         conn = self.connectDb()
         list = []
@@ -81,6 +87,22 @@ class DbHandler:
         cursor.close()
         conn.close()
         return list
+
+    def getServerGrouped(self):
+        conn = self.connectDb()
+        cursor = conn.execute("SELECT "+HostConstant.host+", count("+HostConstant.host+") as count FROM "+HostConstant.tName+" group by "+HostConstant.host+"")
+        groups = cursor.fetchall()
+        serverGroupedData = {}
+        for group in groups:
+            serverGroupedData[group[0]] = {}
+            serverGroupedData[group[0]]['list'] = self.getSeverByGroup(group[0])
+            serverGroupedData[group[0]]['count'] = group[1]
+        return serverGroupedData
+
+    def getSeverByGroup(self, groupname):
+        conn = self.connectDb()
+        cursor = conn.execute("SELECT * FROM "+HostConstant.tName+" where "+HostConstant.host+" = '" + groupname + "'")
+        return cursor.fetchall()
 
     def selectMethod(self, did):
         conn = self.connectDb()
