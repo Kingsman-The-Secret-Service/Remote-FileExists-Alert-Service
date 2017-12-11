@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="11722c45-db3e-4798-babe-efb7ee5e61b0" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/DHandler.py" afterPath="$PROJECT_DIR$/DHandler.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/HostConfig.py" afterPath="$PROJECT_DIR$/HostConfig.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/HostSSH.py" afterPath="$PROJECT_DIR$/HostSSH.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/UIwindow/Server.py" afterPath="$PROJECT_DIR$/UIwindow/Server.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/UIwindow/WindowUI.py" afterPath="$PROJECT_DIR$/UIwindow/WindowUI.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -18,48 +13,24 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Server.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/UIwindow/Server.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="214">
-              <caret line="162" column="24" lean-forward="true" selection-start-line="162" selection-start-column="24" selection-end-line="162" selection-end-column="24" />
-              <folding>
-                <element signature="e#1303#4720#0" expanded="false" />
-                <element signature="e#4756#6333#0" expanded="false" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="WindowUI.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/UIwindow/WindowUI.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="126">
-              <caret line="124" column="35" lean-forward="true" selection-start-line="124" selection-start-column="35" selection-end-line="124" selection-end-column="35" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="HostMain.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/HostMain.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="21" column="35" lean-forward="true" selection-start-line="21" selection-start-column="35" selection-end-line="21" selection-end-column="35" />
+            <state relative-caret-position="306">
+              <caret line="32" column="31" lean-forward="false" selection-start-line="32" selection-start-column="31" selection-end-line="32" selection-end-column="31" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="DHandler.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/DHandler.py">
+      <file leaf-file-name="HostConfig.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/HostConfig.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="291">
-              <caret line="83" column="26" lean-forward="true" selection-start-line="83" selection-start-column="26" selection-end-line="83" selection-end-column="26" />
+            <state relative-caret-position="192">
+              <caret line="48" column="57" lean-forward="true" selection-start-line="48" selection-start-column="57" selection-end-line="48" selection-end-column="57" />
               <folding>
-                <element signature="e#0#9#0" expanded="true" />
+                <element signature="e#0#11#0" expanded="true" />
+                <element signature="e#10771#10930#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -135,12 +106,12 @@
         <option value="$PROJECT_DIR$/UIwindow/testUI.py" />
         <option value="$PROJECT_DIR$/UIwindow/AppUI.py" />
         <option value="$PROJECT_DIR$/HostSSH.py" />
-        <option value="$PROJECT_DIR$/HostConfig.py" />
         <option value="$PROJECT_DIR$/UIwindow/tree.py" />
         <option value="$PROJECT_DIR$/Obj.py" />
         <option value="$PROJECT_DIR$/DHandler.py" />
         <option value="$PROJECT_DIR$/UIwindow/Server.py" />
         <option value="$PROJECT_DIR$/UIwindow/WindowUI.py" />
+        <option value="$PROJECT_DIR$/HostConfig.py" />
       </list>
     </option>
   </component>
@@ -710,17 +681,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/HostConfig.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="9" column="0" lean-forward="true" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-            <element signature="e#10759#10918#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.PyCharmCE2017.2/system/python_stubs/-1247972723/PyQt5/QtGui/QStandardItem.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
@@ -751,9 +711,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="216">
           <caret line="33" column="35" lean-forward="true" selection-start-line="33" selection-start-column="35" selection-end-line="33" selection-end-column="35" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -792,17 +750,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/HostSSH.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="324">
-          <caret line="60" column="40" lean-forward="true" selection-start-line="60" selection-start-column="40" selection-end-line="60" selection-end-column="40" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-            <element signature="e#2633#5060#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/DHandler.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="291">
@@ -813,20 +760,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/HostMain.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="21" column="35" lean-forward="true" selection-start-line="21" selection-start-column="35" selection-end-line="21" selection-end-column="35" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/UIwindow/WindowUI.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="126">
           <caret line="124" column="35" lean-forward="true" selection-start-line="124" selection-start-column="35" selection-end-line="124" selection-end-column="35" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/HostSSH.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="144">
+          <caret line="50" column="34" lean-forward="true" selection-start-line="50" selection-start-column="34" selection-end-line="50" selection-end-column="34" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#2633#5060#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/HostMain.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="32" column="31" lean-forward="false" selection-start-line="32" selection-start-column="31" selection-end-line="32" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/HostConfig.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="192">
+          <caret line="48" column="57" lean-forward="true" selection-start-line="48" selection-start-column="57" selection-end-line="48" selection-end-column="57" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#10771#10930#0" expanded="false" />
           </folding>
         </state>
       </provider>
