@@ -31,10 +31,9 @@ class DbHandler:
                                                      ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
                                                      ''' + HostConstant.sub + ''' TEXT);''')
 
-
     def saveData(self, obj):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj.getHost()+"', '"+obj.getUname()+"', '"+obj.getPwd()+"',"+obj.getPort()+",'"+obj.getDpath()+"','"+obj.getFname()+"','"+obj.getEmail()+"','"+obj.getFwatch()+"' )")
+        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj['hostname']+"', '"+obj['username']+"', '"+obj['password']+"',"+obj['port']+",'"+obj['dir']+"','"+obj['file_name']+"','"+obj['mail']+"','"+obj['fwatcher']+"' )")
         conn.commit()
         conn.close()
 
@@ -99,9 +98,9 @@ class DbHandler:
             serverGroupedData[group[0]]['count'] = group[1]
         return serverGroupedData
 
-    def getSeverByGroup(self, groupname):
+    def getSeverByGroup(self, hostname):
         conn = self.connectDb()
-        cursor = conn.execute("SELECT * FROM "+HostConstant.tName+" where "+HostConstant.host+" = '" + groupname + "'")
+        cursor = conn.execute("SELECT * FROM "+HostConstant.tName+" where "+HostConstant.host+" = '" + hostname + "'")
         return cursor.fetchall()
 
     def selectMethod(self, did):

@@ -1,4 +1,4 @@
-from UIwindow.WindowUI import *
+from WindowUI import *
 
 class server(UiSample):
 
@@ -36,43 +36,61 @@ class server(UiSample):
         self.qdialog = QDialog()
         self.qdialog.setWindowTitle("Add Server Details")
         self.qdialog.setWindowModality(Qt.ApplicationModal)
-        self.qdialog.setFixedSize(300, 220)
+        self.qdialog.setFixedSize(300, 280)
 
         formwidget = QWidget(self.qdialog)
         formLayout = QFormLayout(formwidget)
 
-        groupLabel = QLabel(formwidget)
-        groupLabel.setText('Group Name')
-        formLayout.setWidget(0, QFormLayout.LabelRole, groupLabel)
         hostLabel = QLabel(formwidget)
         hostLabel.setText("Hostname/IP")
         hostLabel.setToolTip('Hostname/IP')
-        formLayout.setWidget(1, QFormLayout.LabelRole, hostLabel)
+        formLayout.setWidget(0, QFormLayout.LabelRole, hostLabel)
         userLabel = QLabel(formwidget)
         userLabel.setText("Username ")
         userLabel.setToolTip('Username')
-        formLayout.setWidget(2, QFormLayout.LabelRole, userLabel)
+        formLayout.setWidget(1, QFormLayout.LabelRole, userLabel)
         pwdLabel = QLabel(formwidget)
         pwdLabel.setText("Password: ")
         pwdLabel.setToolTip('Password')
-        formLayout.setWidget(3, QFormLayout.LabelRole, pwdLabel)
+        formLayout.setWidget(2, QFormLayout.LabelRole, pwdLabel)
         portLabel = QLabel(formwidget)
         portLabel.setText("Port: ")
         portLabel.setToolTip('Port')
-        formLayout.setWidget(4, QFormLayout.LabelRole, portLabel)
+        formLayout.setWidget(3, QFormLayout.LabelRole, portLabel)
+        dirLabel = QLabel(formwidget)
+        dirLabel.setText("Dir Path ")
+        dirLabel.setToolTip('Directory Path')
+        formLayout.setWidget(4, QFormLayout.LabelRole, dirLabel)
+        fileLabel = QLabel(formwidget)
+        fileLabel.setText("File Name\n ex:(*.txt)")
+        fileLabel.setToolTip('File Name')
+        formLayout.setWidget(5, QFormLayout.LabelRole, fileLabel)
+        mailLabel = QLabel(formwidget)
+        mailLabel.setText("Email")
+        mailLabel.setToolTip('Email')
+        formLayout.setWidget(6, QFormLayout.LabelRole, mailLabel)
 
-        self.groupnameField = QLineEdit(formwidget)
-        formLayout.setWidget(0, QFormLayout.FieldRole, self.groupnameField)
         self.hostnameField = QLineEdit(formwidget)
-        formLayout.setWidget(1, QFormLayout.FieldRole, self.hostnameField)
+        formLayout.setWidget(0, QFormLayout.FieldRole, self.hostnameField)
+
         self.usernameField = QLineEdit(formwidget)
-        formLayout.setWidget(2, QFormLayout.FieldRole, self.usernameField)
+        formLayout.setWidget(1, QFormLayout.FieldRole, self.usernameField)
+
         self.passwordField = QLineEdit(formwidget)
         self.passwordField.setEchoMode(QLineEdit.Password)
-        formLayout.setWidget(3, QFormLayout.FieldRole, self.passwordField)
+        formLayout.setWidget(2, QFormLayout.FieldRole, self.passwordField)
+
         self.portField = QLineEdit(formwidget)
         self.portField.setText('22')
-        formLayout.setWidget(4, QFormLayout.FieldRole, self.portField)
+        formLayout.setWidget(3, QFormLayout.FieldRole, self.portField)
+
+        self.dirField = QLineEdit(formwidget)
+        formLayout.setWidget(4, QFormLayout.FieldRole, self.dirField)
+
+        self.fileField = QLineEdit(formwidget)
+        formLayout.setWidget(5, QFormLayout.FieldRole, self.fileField)
+        self.mailField = QLineEdit(formwidget)
+        formLayout.setWidget(6, QFormLayout.FieldRole, self.mailField)
 
         hostnameExp = QRegExp(self.domainOrIpRegex())
         hostnameValidator = QRegExpValidator(hostnameExp, self.hostnameField)
@@ -91,32 +109,56 @@ class server(UiSample):
         self.passwordField.setValidator(passwordValidator)
         self.passwordField.textChanged.connect(self.validateServerFormOnChange)
         self.passwordField.textChanged.emit(self.passwordField.text())
+
         portExp = QRegExp(self.portRegex())
         portValidator = QRegExpValidator(portExp, self.portField)
         self.portField.setValidator(portValidator)
         self.portField.textChanged.connect(self.validateServerFormOnChange)
         self.portField.textChanged.emit(self.portField.text())
 
+        dirFieldExp = QRegExp(".{1,30}")
+        direcotoryValidator = QRegExpValidator(dirFieldExp, self.dirField)
+        self.dirField.setValidator(direcotoryValidator)
+        self.dirField.textChanged.connect(self.validateServerFormOnChange)
+        self.dirField.textChanged.emit(self.dirField.text())
+
+        fileFieldExp = QRegExp("^$|.{1,30}")
+        fileValidator = QRegExpValidator(fileFieldExp, self.fileField)
+        self.fileField.setValidator(fileValidator)
+        self.fileField.textChanged.connect(self.validateServerFormOnChange)
+        self.fileField.textChanged.emit(self.fileField.text())
+
+        mailFieldExp = QRegExp("^$|^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$")
+        mailusernameValidator = QRegExpValidator(mailFieldExp, self.mailField)
+        self.mailField.setValidator(mailusernameValidator)
+        self.mailField.textChanged.connect(self.validateServerFormOnChange)
+        self.mailField.textChanged.emit(self.mailField.text())
+
         addButton = QPushButton(formwidget)
         addButton.setText('Save Server')
-        formLayout.setWidget(5, QFormLayout.FieldRole, addButton)
+        formLayout.setWidget(7, QFormLayout.FieldRole, addButton)
 
         addButton.clicked.connect(self.saveServer)
-
         self.qdialog.exec_()
 
     def saveServer(self):
-        groupname = self.groupnameField.text()
         newServerData = {
             'hostname': self.hostnameField.text(),
             'username': self.usernameField.text(),
             'password': self.passwordField.text(),
-            'port': self.portField.text()
+            'port': self.portField.text(),
+            'dir' : self.dirField.text(),
+            'mail':self.mailField.text()
         }
 
         if not self.validateServerFormOnSubmit(newServerData):
             reply = None
             ssh, error = self.ssh.checkHost(newServerData)
+            pwd = self.constant.encryptpwd(newServerData['password'])
+            newServerData['password'] = pwd
+            newServerData['fwatcher'] = ''
+            newServerData['file_name'] = self.fileField.text()
+            # newServerData['email'] = self.mailField.text()
 
             if error:
                 reply = QMessageBox.question(self.mainWindow, 'Message',
@@ -125,15 +167,10 @@ class server(UiSample):
                                              QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes or not error:
-                pwd =  self.constant.encryptpwd(newServerData['password'])
-                obj = DataObj(None, newServerData['hostname'], newServerData['username'], pwd, newServerData['port'], '/home/ravi/sample', '', '', '')
-                self.dbHandler.saveData(obj)
+                # obj = DataObj(None, newServerData['hostname'], newServerData['username'], pwd, newServerData['port'], '/home/ravi/sample', '', '', '')
+                self.dbHandler.saveData(newServerData)
 
-                # self.dbHandler.insertServer(newServerData)
                 self.generateTree()
-
-                # modelIndex = self.serverData.findItems(newServerData['groupname'])[0].index()
-                # self.treeView.expand(modelIndex)
 
                 self.qdialog.close()
                 QMessageBox.information(self.mainWindow, 'Warning', "Server details has been saved successfully",
@@ -144,7 +181,6 @@ class server(UiSample):
 
     def removeServer(self):
         index = self.treeView.selectedIndexes()[0]
-        crawler = index.model().itemFromIndex(index)
         hostname = self.treeView.model().itemFromIndex(index).text()
 
         reply = QMessageBox.question(self.mainWindow, 'Message',
@@ -183,9 +219,10 @@ class server(UiSample):
         for field in fields:
             fieldObj = getattr(self, field + "Field")
             if isinstance(fieldObj, QLineEdit):
-
+                if field == 'mail':
+                    if fieldObj.text() == '':
+                        continue
                 state = fieldObj.validator().validate(fieldObj.text(), 0)[0]
-
                 if state == QValidator.Acceptable:
                     color = '#c4df9b'  # green
                 elif state == QValidator.Intermediate:

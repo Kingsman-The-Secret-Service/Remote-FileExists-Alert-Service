@@ -58,8 +58,7 @@ class SSHClient(HostConstant, DbHandler):
             ssh.connect(hostData['hostname'], username=hostData['username'], password=hostData['password'])
             # spinner.stop()
         except Exception as e:
-            if hostData['env'] == 'cli':
-                self.stopProgress()
+
             print e
             error = True
 
@@ -150,3 +149,12 @@ class SSHClient(HostConstant, DbHandler):
 
     def stopProgress(self):
         self.initSpinner().stop()
+
+    def execute(ssh, cmd):
+        stdin, stdout, stderr = ssh.exec_command(cmd)
+        return stdout.read()
+
+        cmd_op = stdout.read()
+        result = '----------'
+        result += cmd_op.decode('utf-8')
+        print(result)

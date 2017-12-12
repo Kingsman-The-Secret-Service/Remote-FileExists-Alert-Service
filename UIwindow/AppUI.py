@@ -1,7 +1,8 @@
-from UIwindow.Server import *
+from Server import *
 from PyQt5.QtGui import *
+from Summary import *
 
-class SSHApp(server):
+class SSHApp(summary, server):
     def __init__(self):
         app = QApplication(sys.argv)
         app.setWindowIcon(QIcon(QPixmap('sample.png')))

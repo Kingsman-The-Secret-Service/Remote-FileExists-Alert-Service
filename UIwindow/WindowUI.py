@@ -1,17 +1,25 @@
-import sys
+import sys, os, inspect
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
-from DHandler import *
 import json
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+from DHandler import *
 from HostSSH import SSHClient
+from jinja2 import *
+from Constant import *
 
 class UiSample(object):
     width = 900
     height = 700
+    widgetData = {}
+    prevDockWidget = None
 
     def __init__(self):
         super(UiSample, self).__init__()
+        self.dbHandler = DbHandler()
         self.initUI()
 
     def initUI(self):
@@ -25,36 +33,6 @@ class UiSample(object):
 
         QMetaObject.connectSlotsByName(self.mainWindow)
         self.mainWindow.show()
-
-
-        # hbox = QHBoxLayout(self)
-        #
-        # topleft = QFrame(self)
-        # topleft.setFrameShape(QFrame.StyledPanel)
-        # topleft.resize(200,300)
-        # topleft.setStyleSheet("background-color: rgb(200, 255, 255)")
-        #
-        # layout = QVBoxLayout(topleft)
-        # for _ in range(10):
-        #     l = QLabel('test')
-        #     layout.addWidget(l)
-        #
-        # layout.setAlignment(Qt.AlignTop)
-        # topleft.setLayout(layout)
-        #
-        # topright = QFrame(self)
-        # topright.setFrameShape(QFrame.StyledPanel)
-        # topright.resize(500,200)
-        #
-        # splitter1 = QSplitter(Qt.Horizontal)
-        # splitter1.addWidget(topleft)
-        # splitter1.addWidget(topright)
-        # hbox.addWidget(splitter1)
-        #
-        # self.setLayout(hbox)
-        # self.setGeometry(300, 100, 700, 500)
-        # # self.setWindowIcon(QIcon('sample.png'))
-        # self.setWindowTitle('QSplitter')
 
     def menuBar(self):
         self.menubar = QMenuBar(self.mainWindow)
@@ -90,6 +68,7 @@ class UiSample(object):
         print 'help'
 
     def treeViewWidget(self):
+        hbox = QHBoxLayout(self.mainWindow)
         dockWidget = QDockWidget()
         dockWidget.setFeatures(QDockWidget.NoDockWidgetFeatures)
         self.treeView = QTreeView()
@@ -103,7 +82,10 @@ class UiSample(object):
         self.treeView.setWordWrap(True)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
+        self.treeView.doubleClicked.connect(self.summary)
         dockWidget.setWidget(self.treeView)
+        hbox.addWidget(self.treeView)
+        self.mainWindow.setLayout(hbox)
         self.mainWindow.addDockWidget(Qt.LeftDockWidgetArea, dockWidget)
 
     def openMenu(self, position):
@@ -133,6 +115,94 @@ class UiSample(object):
             menu.addAction("Remove Server")
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
+    def docker(self, tabName):
+        index = self.treeView.selectedIndexes()[0]
+        hostname = self.treeView.model().itemFromIndex(index).text()
+        self.statusbar.showMessage("Connecting to " + hostname)
+        self.dataHost = DbHandler().getSeverByGroup(hostname)
+        hostdata = {'hostname':self.dataHost[0][1],
+                    'username':self.dataHost[0][2],
+                    'password':HostConstant().decryptpwd(self.dataHost[0][3])
+                    }
+        ssh, error = SSHClient().checkHost(hostdata)
+
+        if error:
+            self.statusbar.showMessage("Failed to connect " + self.dataHost[0][1])
+        else:
+            if self.dataHost[0][1] not in self.widgetData:
+                dockWidget = QDockWidget(self.dataHost[0][1])
+                dockWidget.setAllowedAreas(Qt.RightDockWidgetArea)
+
+                self.mainWindow.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
+
+                if self.prevDockWidget:
+                    self.mainWindow.tabifyDockWidget(self.prevDockWidget, dockWidget)
+                else:
+                    self.prevDockWidget = dockWidget
+
+                tabWidget = QTabWidget()
+                tabWidget.setObjectName("tabWidget")
+                tabWidget.setTabsClosable(True)
+                tabWidget.tabCloseRequested.connect(self.tabberClose)
+                dockWidget.setWidget(tabWidget)
+
+                self.widgetData[self.dataHost[0][1]] = {}
+                self.widgetData[self.dataHost[0][1]]['dock'] = dockWidget
+                self.widgetData[self.dataHost[0][1]]['tab'] = tabWidget
+                self.widgetData[self.dataHost[0][1]]['ssh'] = ssh
+                self.statusbar.showMessage("Connected to " + self.dataHost[0][1])
+            else:
+                dockWidget = self.widgetData[self.dataHost[0][1]]['dock']
+
+            dockWidget.setVisible(True)
+            dockWidget.setFocus()
+            dockWidget.raise_()
+            dockWidget.show()
+            # self.mainWindow.addDockWidget(Qt.RohjDockWidgetArea, dockWidget)
+            self.tabber(tabName)
+
+    def tabber(self, name):
+        index = self.treeView.selectedIndexes()[0]
+        hostname = self.treeView.model().itemFromIndex(index).text()
+
+        currentData = {'hostname':self.dataHost[0][1],
+                    'username':self.dataHost[0][2],
+                    'password':HostConstant().decryptpwd(self.dataHost[0][3])
+                    }
+        tabWidget = self.widgetData[currentData['hostname']]['tab']
+
+        if name not in self.widgetData[currentData['hostname']]:
+            tab = QWidget()
+            tabWidget.addTab(tab, name.title())
+            self.widgetData[currentData['hostname']][name] = tab
+        else:
+            tab = self.widgetData[currentData['hostname']][name]
+            tabWidget.addTab(tab, name.title())
+
+        tabWidget.setCurrentWidget(tab)
+        tab.show()
+
+    def tabberClose(self, i):
+        pos = QCursor.pos()
+        widgets = qApp.widgetAt(pos)
+        widgets.parentWidget().parentWidget().removeTab(i)
+
+    # def currentData(self, hostname):
+    #     return self.dbHandler.getSeverByGroup(hostname)
+
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)
         self.mainWindow.setStatusBar(self.statusbar)
+
+    def render(self, fileName, data):
+        currentDirectoryPath = os.path.dirname(os.path.realpath(__file__))
+        templatePath = currentDirectoryPath + '/templates/'
+        staticPath = 'file://' + currentDirectoryPath + '/static/'
+
+        env = Environment(
+            loader=FileSystemLoader(templatePath)
+        )
+
+        template = env.get_template(fileName)
+        html = template.render(data, staticPath=staticPath)
+        return html

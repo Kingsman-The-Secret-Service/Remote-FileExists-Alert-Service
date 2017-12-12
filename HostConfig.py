@@ -82,8 +82,18 @@ class HostOptions(SSHClient, DbHandler, Mail):
             else:
                 email = ''
             pwd = self.encryptpwd(password)
-            obj = DataObj(None, ipAddress, userName, pwd, port, dir_path, file_name, email,'')
-            self.saveData(obj)
+            hostData = {
+                'hostname': ipAddress,
+                'username': userName,
+                'password': pwd,
+                'port': port,
+                'dir':dir_path,
+                'file_name':file_name,
+                'mail':email,
+                'fwatcher':''
+            }
+            # obj = DataObj(None, ipAddress, userName, pwd, port, dir_path, file_name, email,'')
+            self.saveData(hostData)
             # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
             return
