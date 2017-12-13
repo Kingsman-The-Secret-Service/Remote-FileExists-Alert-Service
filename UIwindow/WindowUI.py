@@ -25,7 +25,7 @@ class UiSample(object):
     def initUI(self):
         self.mainWindow = QMainWindow()
         self.mainWindow.resize(self.width, self.height)
-        self.mainWindow.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
+        # self.mainWindow.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
         self.menuBar()
         self.treeViewWidget()
@@ -68,9 +68,12 @@ class UiSample(object):
         print 'help'
 
     def treeViewWidget(self):
-        hbox = QHBoxLayout(self.mainWindow)
-        dockWidget = QDockWidget()
-        dockWidget.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        # hbox = QHBoxLayout(self.mainWindow)
+        # dockWidget = QDockWidget()
+        # dockWidget.setFeatures(QDockWidget.NoDockWidgetFeatures)
+        qwidget = QWidget()
+        hbox = QHBoxLayout()
+        self.leftFrame = QFrame()
         self.treeView = QTreeView()
         self.treeView.setMaximumSize(QSize(200, 16777215))
         self.treeView.setGeometry(QRect(10, 10, 200, self.height))
@@ -83,10 +86,58 @@ class UiSample(object):
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.doubleClicked.connect(self.summary)
-        dockWidget.setWidget(self.treeView)
-        hbox.addWidget(self.treeView)
-        self.mainWindow.setLayout(hbox)
-        self.mainWindow.addDockWidget(Qt.LeftDockWidgetArea, dockWidget)
+        leftLayout = QVBoxLayout()
+        leftLayout.addWidget(self.treeView)
+        qwidget.setLayout(leftLayout)
+
+        self.rightWidget = QWidget()
+        formLayout = QFormLayout(self.rightWidget)
+        titleLabel = QLabel("== Server Details ==")
+        formLayout.setWidget(0, QFormLayout.LabelRole, titleLabel)
+        nameLabel = QLabel("Host Server:")
+        formLayout.setWidget(1, QFormLayout.LabelRole, nameLabel)
+        self.hostEdit = QLabel()
+        formLayout.setWidget(1, QFormLayout.FieldRole, self.hostEdit)
+        userLabel = QLabel("Username:")
+        formLayout.setWidget(2, QFormLayout.LabelRole, userLabel)
+        self.unameEdit = QLabel()
+        formLayout.setWidget(2, QFormLayout.FieldRole, self.unameEdit)
+        pwdLabel = QLabel("Password:")
+        formLayout.setWidget(3, QFormLayout.LabelRole, pwdLabel)
+        self.pwdEdit = QLabel()
+        self.pwdEdit.setText("*******")
+        formLayout.setWidget(3, QFormLayout.FieldRole, self.pwdEdit)
+
+        portLabel = QLabel("Port:")
+        formLayout.setWidget(4, QFormLayout.LabelRole, portLabel)
+        self.portEdit = QLabel()
+        formLayout.setWidget(4, QFormLayout.FieldRole, self.portEdit)
+
+        dirLabel = QLabel("Directory Path:")
+        formLayout.setWidget(5, QFormLayout.LabelRole, dirLabel)
+        self.dirEdit = QLabel()
+        formLayout.setWidget(5, QFormLayout.FieldRole, self.dirEdit)
+
+        fileLabel = QLabel("File  Path:")
+        formLayout.setWidget(6, QFormLayout.LabelRole, fileLabel)
+        self.fileEdit = QLabel()
+        formLayout.setWidget(6, QFormLayout.FieldRole, self.fileEdit)
+
+        mailLabel = QLabel("Email:")
+        formLayout.setWidget(7, QFormLayout.LabelRole, mailLabel)
+        self.mailEdit = QLabel()
+        formLayout.setWidget(7, QFormLayout.FieldRole, self.mailEdit)
+
+        self.rightWidget.setLayout(formLayout)
+        self.rightWidget.setVisible(False)
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(qwidget)
+        splitter.addWidget(self.rightWidget)
+        splitter.setSizes([50, 250])
+        hbox.addWidget(splitter)
+        centerWidget = QWidget()
+        centerWidget.setLayout(hbox)
+        self.mainWindow.setCentralWidget(centerWidget)
 
     def openMenu(self, position):
         indexes = self.treeView.selectedIndexes()
@@ -115,7 +166,18 @@ class UiSample(object):
             menu.addAction("Remove Server")
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
-    def docker(self, tabName):
+    def doubleClicked(self, name):
+        print name
+        self.rightWidget.setVisible(True)
+        self.hostEdit.setText(name)
+        dataHost = self.dbHandler.getSeverByGroup(name)
+        self.unameEdit.setText(dataHost[0][2])
+        self.portEdit.setText(str(dataHost[0][4]))
+        self.dirEdit.setText(dataHost[0][5])
+        self.fileEdit.setText(dataHost[0][6])
+        self.mailEdit.setText(dataHost[0][7])
+
+        '''def docker(self, tabName):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
         self.statusbar.showMessage("Connecting to " + hostname)
@@ -185,7 +247,7 @@ class UiSample(object):
     def tabberClose(self, i):
         pos = QCursor.pos()
         widgets = qApp.widgetAt(pos)
-        widgets.parentWidget().parentWidget().removeTab(i)
+        widgets.parentWidget().parentWidget().removeTab(i)'''
 
     # def currentData(self, hostname):
     #     return self.dbHandler.getSeverByGroup(hostname)

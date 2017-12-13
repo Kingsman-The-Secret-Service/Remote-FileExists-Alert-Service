@@ -7,15 +7,14 @@ class summary(UiSample):
         super(summary, self).__init__()
 
     def summary(self):
-        self.docker('summary')
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
-
-        hbox = QHBoxLayout(self.mainWindow)
-        self.textbox = QLabel(self.mainWindow)
-        self.textbox.setText('Hello')
-        hbox.addWidget(self.treeView)
-        self.mainWindow.setLayout(hbox)
+        self.doubleClicked(hostname)
+        # hbox = QHBoxLayout(self.mainWindow)
+        # self.textbox = QLabel(self.mainWindow)
+        # self.textbox.setText('Hello')
+        # hbox.addWidget(self.treeView)
+        # self.mainWindow.setLayout(hbox)
 
         # index = self.treeView.selectedIndexes()[0]
         # hostname = self.treeView.model().itemFromIndex(index).text()
