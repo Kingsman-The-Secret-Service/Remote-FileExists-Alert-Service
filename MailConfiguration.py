@@ -10,7 +10,14 @@ class Mail:
 
     def initSetup(self):
         if self.db.readMailCountData() == 0:
-            self.db.saveMailData('smtp.gmail.com', '587', 'xxxxx@gmail.com', 'xxxxxxx', 'yyyyy@gmail.com', 'File Created')
+            mailData = {'smtp':'smtp.gmail.com',
+                        'port':'587',
+                        'sender':'xxxxx@gmail.com',
+                        'password':'xxxxxxx',
+                        'receiver':'yyyyyy@gmail.com',
+                        'sub':'File Created'
+                        }
+            self.db.saveMailData(mailData)
 
     def configMail(self, dbObj, mId):
         try:
@@ -33,6 +40,13 @@ class Mail:
             while not Validations.checkIsEmpty(subject):
                 subject = raw_input('Please enter the mail subject: ')
 
-            dbObj.updateMailData(mId, smtp, smtp_port, email, password, receiver, subject)
+            mailData = {'smtp': smtp,
+                        'port': smtp_port,
+                        'sender': email,
+                        'password': password,
+                        'receiver': receiver,
+                        'sub': subject
+                        }
+            dbObj.updateMailData(mId, mailData)
         except KeyboardInterrupt:
             return

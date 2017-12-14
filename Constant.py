@@ -10,6 +10,12 @@ class HostConstant:
             #https://github.com/sindresorhus/cli-spinners/blob/dac4fc6571059bb9e9bc204711e9dfe8f72e5c6f/spinners.json
         return self.haloSpinner
 
+    def startProgress(self):
+        self.initSpinner().start()
+
+    def stopProgress(self):
+        self.initSpinner().stop()
+
     def encryptpwd(self, pwd):
         return base64.b64encode(pwd)
 

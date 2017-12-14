@@ -5,7 +5,6 @@ from HostSSH import SSHClient
 from terminaltables import AsciiTable
 from DHandler import DbHandler
 import getpass
-from Obj import DataObj
 from Constant import HostConstant
 
 class HostOptions(SSHClient, DbHandler, Mail):
@@ -92,7 +91,6 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 'mail':email,
                 'fwatcher':''
             }
-            # obj = DataObj(None, ipAddress, userName, pwd, port, dir_path, file_name, email,'')
             self.saveData(hostData)
             # self.createJsonFile()
         except (IOError, KeyboardInterrupt):
@@ -100,46 +98,38 @@ class HostOptions(SSHClient, DbHandler, Mail):
 
     def removeHost(self):  # Remove host
         try:
-            # jsonFile = open('test.json', 'r')
-            # conn_string = json.load(jsonFile)
             listsHost = []
-            hdetails = self.selectQueryMethod()
+            hdetails = self.selectHostDetail()
             if hdetails == []:
                 print 'No IP Address found, try Again'
                 return
-            # if conn_string['host'] == []:
-            #     print 'No IP Address found, try Again'
-            #     return
+
             table_data = []
             table_data.append(['Options', 'Hosts'])
             for data in hdetails:
-                table_data.append([str(data.getDid()), str(data.getHost())])
-                listsHost.append(str(data.getHost()))
-            # for index, element in enumerate(conn_string['host']):
-            #     # print '(', index + 1, ').', element['ip_address']
-            #     table_data.append([str(index+1),  str(element['ip_address'])])
-            #     listsHost.append(str(element['ip_address']))
+                table_data.append([str(data['did']), str(data['hostname'])])
+                listsHost.append(str(data['hostname']))
             table = AsciiTable(table_data)
             print table.table
             host = raw_input('Enter the option to remove: ')
             while not Validations.checkIsInteger(host):
                 host = raw_input("Enter the option to remove: ")
 
-            while not any(str(d.getDid()) == str(host) for d in hdetails):
+            while not any(str(d['did']) == str(host) for d in hdetails):
                 host = raw_input("The host not found, Enter the valid option to remove: ")
 
             choice = raw_input('Are you sure, you want to remove?(y/n)')
             while not Validations.checkIsEmpty(choice):
                 choice = raw_input('Do you want to remove?(y/n)')
             if choice == 'y':
-                self.removeHostServer(self, host)
+                self.removeHostServer(host)
 
         except (IOError, IndexError, KeyboardInterrupt):
             print 'Hosts not found'
 
     def runHost(self):
         try:
-            hdetails = self.selectQueryMethod()
+            hdetails = self.selectHostDetail()
             if hdetails == []:
                 print 'No IP Address found, try Again'
                 return
@@ -147,10 +137,12 @@ class HostOptions(SSHClient, DbHandler, Mail):
             table_data.append(['Options', 'Hosts'])
             table_data.append(['0','Run All'])
             listIndex = []
+            listId = []
             for index, data in enumerate(hdetails):
                 index = index +1
-                table_data.append([str(data.getDid()), str(data.getHost())])
+                table_data.append([str(data['did']), str(data['hostname'])])
                 listIndex.append(str(index))
+                listId.append(str(data['did']))
             table = AsciiTable(table_data)
             print table.table
             userAction = raw_input('Enter the option to connect host: ')
@@ -158,22 +150,22 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 if int(userAction) == 0:
                     self.hostWatcherAll(hdetails)
                 else:
-                    while not any(str(d.getDid()) == str(userAction) for d in hdetails):
+                    while not any(str(d['did']) == str(userAction) for d in hdetails):
                         userAction = raw_input("Enter the valid option to connect host: ")
                     self.hostWatcher(userAction)
             else:
                 try:
                     numbers = userAction.split(',')
-                    new_list = []
                     hdAll = []
                     for element in numbers:
-                        if element in listIndex:
-                            hdAll.append(hdetails[int(element) -1])
-                            new_list.append(element)
-                        else:
-                            print 'The selected options are not available ='+element
+                        # indices = [i for i, x in enumerate(hdetails) if str(x['did']) == element]
+                        for ix, x in enumerate(hdetails):
+                            if str(x['did']) == element:
+                                hdAll.append(hdetails[ix])
                     if hdAll:
                         self.hostWatcherAll(hdAll)
+                    else:
+                        print 'The entered options are not available'
                 except TypeError:
                     print 'Enter the valid hosts.'
                     return
@@ -184,14 +176,15 @@ class HostOptions(SSHClient, DbHandler, Mail):
     def hostWatcher(self, index):
         try:
             hdetails = self.selectMethod(index)
-            self.updateFileData('', hdetails.getHost())
+            self.updateFileData('', hdetails['hostname'])
+            self.startProgress()
             while True:
                 self.connect_host(hdetails)
                 time.sleep(10)
         except KeyboardInterrupt:
             self.stopProgress()
             hdetails = self.selectMethod(index)
-            self.updateFileData('', hdetails.getHost())
+            self.updateFileData('', hdetails['hostname'])
             print 'Host watching stopped'
             return
 
@@ -204,27 +197,27 @@ class HostOptions(SSHClient, DbHandler, Mail):
         except KeyboardInterrupt:
             self.stopProgress()
             for h in list:
-                self.updateFileData('', h.getHost())
+                self.updateFileData('', h['hostname'])
             print 'Host watching stopped'
             return
 
     def editHostConfiguration(self):
         try:
-            hdetails = self.selectQueryMethod()
+            hdetails = self.selectHostDetail()
             if hdetails == []:
                 print 'No IP Address found, try Again'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts'])
             for data in hdetails:
-                table_data.append([str(data.getDid()), str(data.getHost())])
+                table_data.append([str(data['did']), str(data['hostname'])])
             table = AsciiTable(table_data)
             print table.table
             userHostOption = raw_input('Select option to edit: ')
             while not Validations.checkIsInteger(userHostOption):
                 userHostOption = raw_input("Select option to edit: ")
 
-            while not any(str(d.getDid()) == str(userHostOption) for d in hdetails):
+            while not any(str(d['did']) == str(userHostOption) for d in hdetails):
                 userHostOption = raw_input("Select valid option to edit: ")
 
             self.updateHostData(userHostOption)
@@ -234,14 +227,14 @@ class HostOptions(SSHClient, DbHandler, Mail):
 
     def viewHost(self):
         try:
-            hdetails = self.selectQueryMethod()
+            hdetails = self.selectHostDetail()
             if hdetails == []:
                 print 'No IP Address found, try Again'
                 return
             table_data = []
             table_data.append(['Options', 'Hosts', 'Receiver'])
             for data in hdetails:
-                table_data.append([str(data.getDid()), str(data.getHost()), str(data.getEmail())])
+                table_data.append([str(data['did']), str(data['hostname']), str(data['mail'])])
             table = AsciiTable(table_data)
             print table.table
         except (IOError, KeyboardInterrupt, AttributeError, TypeError):
@@ -254,12 +247,12 @@ class HostOptions(SSHClient, DbHandler, Mail):
             config = self.readMailData()
             if config is None:
                 return
-            table_data.append(['SMTP', config.getSmtp()])
-            table_data.append(['SMTP Port', config.getSmtpPort()])
-            table_data.append(['Email', config.getEmail()])
+            table_data.append(['SMTP', config['smtp']])
+            table_data.append(['SMTP Port', config['port']])
+            table_data.append(['Email', config['sender']])
             table_data.append(['Password',' **********'])
-            table_data.append(['Receiver', config.getReceiver()])
-            table_data.append(['Subject', config.getSub()])
+            table_data.append(['Receiver', config['receiver']])
+            table_data.append(['Subject', config['sub']])
             table = AsciiTable(table_data)
             print table.table
 
@@ -271,15 +264,15 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 uMailInput = raw_input("Please enter the option: ")
 
             if int(uMailInput) == 1:
-                self.configMail(self,config.getEmail())
+                self.configMail(self,config['sender'])
             else:
                 return
         except KeyboardInterrupt:
             return
 
-    def removeHostServer(self, obj, index):
+    def removeHostServer(self, index):
         try:
-            obj.deleteData(index)
+            self.deleteData(index)
             print 'Succesfully removed host.\n'
         except (IndexError, IOError):
             print 'Host not found'
@@ -287,17 +280,15 @@ class HostOptions(SSHClient, DbHandler, Mail):
     def updateHostData(self, option):
         try:
             obj = self.selectMethod(option)
-            # conn_string = JsonFile.readJson()
-            # hostValues = conn_string[hostStr][index]
             table_data = []
             table_data.append(['Mail', 'Values'])
-            table_data.append(['Username', obj.getUname()])
+            table_data.append(['Username', obj['username']])
             table_data.append(['Password', ' *******'])
-            table_data.append(['Host', obj.getHost()])
-            table_data.append(['Port', obj.getPort()])
-            table_data.append(['Directory Path', obj.getDpath()])
-            table_data.append(['File Name', obj.getFname()])
-            table_data.append(['E-mail', obj.getEmail()])
+            table_data.append(['Host', obj['hostname']])
+            table_data.append(['Port', obj['port']])
+            table_data.append(['Directory Path', obj['dir']])
+            table_data.append(['File Name', obj['file_name']])
+            table_data.append(['E-mail', obj['mail']])
             table = AsciiTable(table_data)
             print table.table
         except IndexError:
@@ -376,8 +367,6 @@ class HostOptions(SSHClient, DbHandler, Mail):
             passwordValue = getpass.getpass('Please enter the password: ')
 
         ipAddress = raw_input('Enter the Host: ')
-        # while not Validations.checkIp(ip_addressValue):
-        #     ip_addressValue = raw_input("Enter the valid host: ")
         while not Validations.checkIsEmpty(ipAddress):
             ipAddress = raw_input("Enter the valid ip address: ")
 
@@ -423,5 +412,14 @@ class HostOptions(SSHClient, DbHandler, Mail):
         else:
             email = ''
         pwd = self.encryptpwd(passwordValue)
-        self.updateAllData(ipAddress, userNameValue, pwd, portValue, dir_path, file_name, email, index)
+        updateServerData = {
+            'hostname': ipAddress,
+            'username': userNameValue,
+            'password': pwd,
+            'port': portValue,
+            'dir': dir_path,
+            'file_name':file_name,
+            'mail': email
+        }
+        self.updateAllData(updateServerData, index)
         print 'Updated successfully.'

@@ -1,7 +1,6 @@
 from WindowUI import *
 
 class summary(UiSample):
-    summaryData = {}
 
     def __init__(self):
         super(summary, self).__init__()
@@ -10,30 +9,27 @@ class summary(UiSample):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
         self.doubleClicked(hostname)
-        # hbox = QHBoxLayout(self.mainWindow)
-        # self.textbox = QLabel(self.mainWindow)
-        # self.textbox.setText('Hello')
-        # hbox.addWidget(self.treeView)
-        # self.mainWindow.setLayout(hbox)
-
-        # index = self.treeView.selectedIndexes()[0]
-        # hostname = self.treeView.model().itemFromIndex(index).text()
-        #
-        # summaryTab = Helper.getData(self.widgetData[self.currentData()['hostname']], 'summary')
-        # ssh = Helper.getData(self.widgetData[self.currentData()['hostname']], 'ssh')
-        # summaryTab.setLayout(QVBoxLayout())
-        #
-        # self.ip()
-        # self.hostname(ssh)
-        #
-        # html = self.render('summary.html', self.summaryData)
-        # view = QWebEngineView()
-        # view.setHtml(html, QUrl("file://"))
-        # summaryTab.layout().addWidget(view)
-
-    def ip(self):
-        self.summaryData['ip'] = self.dataHost['hostname']
 
     def hostname(self, ssh):
-        output = SSHClient.execute(ssh, 'hostname')
-        self.summaryData['hostname'] = output.decode('utf-8')
+        output = self.ssh.execute(ssh, 'hostname')
+        self.detail['hostname'] = output.decode('utf-8')
+
+    def uptime(self, ssh):
+        output = self.ssh.execute(ssh, 'uptime -p')
+        self.detail['uptime'] = output.decode('utf-8')
+
+    def kernelname(self, ssh):
+        output = self.ssh.execute(ssh, 'uname -s')
+        self.detail['kernelname'] = output.decode('utf-8')
+
+    def kernelrelease(self, ssh):
+        output = self.ssh.execute(ssh, 'uname -r')
+        self.detail['kernelrelease'] = output.decode('utf-8')
+
+    def osname(self, ssh):
+        output = self.ssh.execute(ssh, 'uname -o')
+        self.detail['osname'] = output.decode('utf-8')
+
+    def processor(self, ssh):
+        output = self.ssh.execute(ssh, 'uname -p')
+        self.detail['processor'] = output.decode('utf-8')

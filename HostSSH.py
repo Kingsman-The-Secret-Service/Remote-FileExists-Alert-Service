@@ -21,15 +21,15 @@ class SSHClient(HostConstant, DbHandler):
 
     def mailAlert(self, data):
         config = self.readMailData()
-        smtp = config.getSmtp()
-        smtp_port = config.getSmtpPort()
-        mail = config.getEmail()
-        password = config.getPwd()
-        subject = config.getSub()
+        smtp = config['smtp']
+        smtp_port = config['port']
+        mail = config['sender']
+        password = config['password']
+        subject = config['sub']
 
-        receiver = data.getEmail()
+        receiver = data['mail']
         if not receiver:
-            receiver = config.getReceiver()
+            receiver = config['receiver']
         try:
             server = smtplib.SMTP(smtp, int(smtp_port))
             server.ehlo()
@@ -50,43 +50,21 @@ class SSHClient(HostConstant, DbHandler):
 
     def checkHost(self, hostData):
         error = None
-        # spinner = Validations.initConst()
-        # spinner.start()
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostData['hostname'], username=hostData['username'], password=hostData['password'])
-            # spinner.stop()
         except Exception as e:
-
             print e
             error = True
-
         finally:
             ssh.close()
         return ssh, error
-        # except paramiko.BadHostKeyException, e:
-        #     spinner.stop()
-        #     print e
-        #     return 'Error'
-        # except paramiko.AuthenticationException, e:
-        #     print e
-        #     spinner.stop()
-        #     return 'Error'
-        # except paramiko.SSHException, e:
-        #     spinner.stop()
-        #     print e
-        #     print 'Error'
-        # except socket.error as e:
-        #     spinner.stop()
-        #     print 'socket =', e
-        #     return 'Error'
-
 
     def connect_host(self, data):
         try:
-            pwd = self.decryptpwd(data.getPwd())
-            server, username, password = (data.getHost(), data.getUname(), pwd)
+            pwd = self.decryptpwd(data['password'])
+            server, username, password = (data['hostname'], data['username'], pwd)
             # port = data.getPort()
             ssh = paramiko.SSHClient()
             # paramiko.util.log_to_file("ssh.log")
@@ -97,22 +75,21 @@ class SSHClient(HostConstant, DbHandler):
             conn = ssh.connect(server, username=username, password=password)
             if conn:
                 print 'connection failed'
-            self.startProgress()
+            # self.startProgress()
             sftp = ssh.open_sftp()
             try:
-                folderPath = str(data.getDpath())
+                folderPath = str(data['dir'])
                 list = sftp.listdir(folderPath)
                 if not list == []:
                     list.sort()
                     myString = ",".join(list)
-                    # print myString
-                    myFs = self.readFileData(data.getHost())
+                    myFs = self.readFileData(data['hostname'])
                     if myFs == myString:
                         return
                     else:
-                        self.updateFileData(myString, data.getHost())
+                        self.updateFileData(myString, data['hostname'])
 
-                    fileExt = str(data.getFname())
+                    fileExt = str(data['file_name'])
                     if not fileExt:
                         self.mailAlert(data)
                     else:
@@ -144,13 +121,7 @@ class SSHClient(HostConstant, DbHandler):
             output = "Authentication Failed"
             print output
 
-    def startProgress(self):
-        self.initSpinner().start()
-
-    def stopProgress(self):
-        self.initSpinner().stop()
-
-    def execute(ssh, cmd):
+    def execute(self, ssh, cmd):
         stdin, stdout, stderr = ssh.exec_command(cmd)
         return stdout.read()
 

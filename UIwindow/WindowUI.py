@@ -14,12 +14,14 @@ from Constant import *
 class UiSample(object):
     width = 900
     height = 700
-    widgetData = {}
+    detail = {}
     prevDockWidget = None
 
     def __init__(self):
         super(UiSample, self).__init__()
         self.dbHandler = DbHandler()
+        self.constant = HostConstant()
+        self.ssh = SSHClient()
         self.initUI()
 
     def initUI(self):
@@ -68,9 +70,6 @@ class UiSample(object):
         print 'help'
 
     def treeViewWidget(self):
-        # hbox = QHBoxLayout(self.mainWindow)
-        # dockWidget = QDockWidget()
-        # dockWidget.setFeatures(QDockWidget.NoDockWidgetFeatures)
         qwidget = QWidget()
         hbox = QHBoxLayout()
         self.leftFrame = QFrame()
@@ -91,44 +90,25 @@ class UiSample(object):
         qwidget.setLayout(leftLayout)
 
         self.rightWidget = QWidget()
-        formLayout = QFormLayout(self.rightWidget)
-        titleLabel = QLabel("== Server Details ==")
-        formLayout.setWidget(0, QFormLayout.LabelRole, titleLabel)
-        nameLabel = QLabel("Host Server:")
-        formLayout.setWidget(1, QFormLayout.LabelRole, nameLabel)
-        self.hostEdit = QLabel()
-        formLayout.setWidget(1, QFormLayout.FieldRole, self.hostEdit)
-        userLabel = QLabel("Username:")
-        formLayout.setWidget(2, QFormLayout.LabelRole, userLabel)
-        self.unameEdit = QLabel()
-        formLayout.setWidget(2, QFormLayout.FieldRole, self.unameEdit)
-        pwdLabel = QLabel("Password:")
-        formLayout.setWidget(3, QFormLayout.LabelRole, pwdLabel)
-        self.pwdEdit = QLabel()
-        self.pwdEdit.setText("*******")
-        formLayout.setWidget(3, QFormLayout.FieldRole, self.pwdEdit)
+        layout = QVBoxLayout()
+        layout.setSpacing(10)
 
-        portLabel = QLabel("Port:")
-        formLayout.setWidget(4, QFormLayout.LabelRole, portLabel)
-        self.portEdit = QLabel()
-        formLayout.setWidget(4, QFormLayout.FieldRole, self.portEdit)
+        title = QLabel('----- Summary -----')
+        qboxWidget = QWidget()
+        boxlayout = QVBoxLayout()
+        boxlayout.addWidget(title)
+        qboxWidget.setLayout(boxlayout)
 
-        dirLabel = QLabel("Directory Path:")
-        formLayout.setWidget(5, QFormLayout.LabelRole, dirLabel)
-        self.dirEdit = QLabel()
-        formLayout.setWidget(5, QFormLayout.FieldRole, self.dirEdit)
+        self.tableHostWidget = QTableWidget()
+        layout.setContentsMargins(10,10,0,0)
+        layout.addWidget(qboxWidget, 0, Qt.AlignTop)
 
-        fileLabel = QLabel("File  Path:")
-        formLayout.setWidget(6, QFormLayout.LabelRole, fileLabel)
-        self.fileEdit = QLabel()
-        formLayout.setWidget(6, QFormLayout.FieldRole, self.fileEdit)
+        layout.addWidget(self.tableHostWidget, 1, Qt.AlignTop)
 
-        mailLabel = QLabel("Email:")
-        formLayout.setWidget(7, QFormLayout.LabelRole, mailLabel)
-        self.mailEdit = QLabel()
-        formLayout.setWidget(7, QFormLayout.FieldRole, self.mailEdit)
+        self.tableSummaryWidget = QTableWidget()
+        layout.addWidget(self.tableSummaryWidget, 2, Qt.AlignTop)
+        self.rightWidget.setLayout(layout)
 
-        self.rightWidget.setLayout(formLayout)
         self.rightWidget.setVisible(False)
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(qwidget)
@@ -153,11 +133,9 @@ class UiSample(object):
             menu.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
             menu.addSeparator()
             menu.addAction("Remove Group", self.removeServer)
-            menu.addAction("Run")
-            # menu.addAction("Summary")
-            # menu.addAction("Ftp")
+            menu.addAction("Run", self.runServer)
             menu.addSeparator()
-            menu.addAction("Edit Server")
+            menu.addAction("Edit Server", self.editServer)
         elif level == 1:
             menu.addAction("Summary")
             menu.addAction("Ftp")
@@ -167,90 +145,72 @@ class UiSample(object):
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
     def doubleClicked(self, name):
-        print name
         self.rightWidget.setVisible(True)
-        self.hostEdit.setText(name)
-        dataHost = self.dbHandler.getSeverByGroup(name)
-        self.unameEdit.setText(dataHost[0][2])
-        self.portEdit.setText(str(dataHost[0][4]))
-        self.dirEdit.setText(dataHost[0][5])
-        self.fileEdit.setText(dataHost[0][6])
-        self.mailEdit.setText(dataHost[0][7])
+        hostServer = self.dbHandler.getHostDetail(name)
+        self.tableHostWidget.setRowCount(5)
+        self.tableHostWidget.setColumnCount(2)
 
-        '''def docker(self, tabName):
+        self.tableHostWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
+        self.tableHostWidget.horizontalHeader().hide()
+        self.tableHostWidget.verticalHeader().hide()
+
+        self.tableHostWidget.setItem(0, 0, QTableWidgetItem("Host server"))
+        self.tableHostWidget.setItem(0, 1, QTableWidgetItem(hostServer['hostname']))
+        self.tableHostWidget.setItem(1, 0, QTableWidgetItem("Username"))
+        self.tableHostWidget.setItem(1, 1, QTableWidgetItem(hostServer['username']))
+        self.tableHostWidget.setItem(2, 0, QTableWidgetItem("Port"))
+        self.tableHostWidget.setItem(2, 1, QTableWidgetItem(str(hostServer['port'])))
+        self.tableHostWidget.setItem(3, 0, QTableWidgetItem("Directory Path"))
+        self.tableHostWidget.setItem(3, 1, QTableWidgetItem(hostServer['dir']))
+        self.tableHostWidget.setItem(4, 0, QTableWidgetItem("File Name"))
+        self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['file_name']))
+        self.tableHostWidget.setItem(4, 0, QTableWidgetItem("Email"))
+        self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['mail']))
+
+        self.tableHostWidget.move(10, 50)
+        self.tableHostWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tableHostWidget.resizeColumnsToContents()
+        self.tableHostWidget.setMaximumHeight(160)
+        self.tableHostWidget.setMaximumWidth(350)
+
+        hostServer['password'] = self.constant.decryptpwd(hostServer['password'])
+        sshClient, error = self.ssh.checkHost(hostServer)
+
+        if error is None:
+            self.hostname(sshClient)
+            self.uptime(sshClient)
+            self.kernelname(sshClient)
+            self.kernelrelease(sshClient)
+            self.osname(sshClient)
+            self.processor(sshClient)
+            sshClient.close()
+            self.tableSummaryWidget.setRowCount(5)
+            self.tableSummaryWidget.setColumnCount(2)
+            self.tableSummaryWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
+            self.tableSummaryWidget.horizontalHeader().hide()
+            self.tableSummaryWidget.verticalHeader().hide()
+            self.tableSummaryWidget.setItem(0, 0, QTableWidgetItem("Host Name"))
+            self.tableSummaryWidget.setItem(0, 1, QTableWidgetItem(self.detail['hostname']))
+            self.tableSummaryWidget.setItem(1, 0, QTableWidgetItem("Uptime"))
+            self.tableSummaryWidget.setItem(1, 1, QTableWidgetItem(self.detail['uptime']))
+
+            self.tableSummaryWidget.setItem(2, 0, QTableWidgetItem("Kernal Name"))
+            self.tableSummaryWidget.setItem(2, 1, QTableWidgetItem(self.detail['kernelname']))
+            self.tableSummaryWidget.setItem(3, 0, QTableWidgetItem("Kernal Release"))
+            self.tableSummaryWidget.setItem(3, 1, QTableWidgetItem(self.detail['kernelrelease']))
+            self.tableSummaryWidget.setItem(4, 0, QTableWidgetItem("OS Name"))
+            self.tableSummaryWidget.setItem(4, 1, QTableWidgetItem(self.detail['osname']))
+            self.tableSummaryWidget.setItem(4, 0, QTableWidgetItem("Processor"))
+            self.tableSummaryWidget.setItem(4, 1, QTableWidgetItem(self.detail['processor']))
+            self.tableSummaryWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.tableSummaryWidget.resizeColumnsToContents()
+            self.tableSummaryWidget.setMaximumHeight(170)
+            self.tableSummaryWidget.setMaximumWidth(400)
+
+    def runServer(self):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
-        self.statusbar.showMessage("Connecting to " + hostname)
-        self.dataHost = DbHandler().getSeverByGroup(hostname)
-        hostdata = {'hostname':self.dataHost[0][1],
-                    'username':self.dataHost[0][2],
-                    'password':HostConstant().decryptpwd(self.dataHost[0][3])
-                    }
-        ssh, error = SSHClient().checkHost(hostdata)
-
-        if error:
-            self.statusbar.showMessage("Failed to connect " + self.dataHost[0][1])
-        else:
-            if self.dataHost[0][1] not in self.widgetData:
-                dockWidget = QDockWidget(self.dataHost[0][1])
-                dockWidget.setAllowedAreas(Qt.RightDockWidgetArea)
-
-                self.mainWindow.addDockWidget(Qt.RightDockWidgetArea, dockWidget)
-
-                if self.prevDockWidget:
-                    self.mainWindow.tabifyDockWidget(self.prevDockWidget, dockWidget)
-                else:
-                    self.prevDockWidget = dockWidget
-
-                tabWidget = QTabWidget()
-                tabWidget.setObjectName("tabWidget")
-                tabWidget.setTabsClosable(True)
-                tabWidget.tabCloseRequested.connect(self.tabberClose)
-                dockWidget.setWidget(tabWidget)
-
-                self.widgetData[self.dataHost[0][1]] = {}
-                self.widgetData[self.dataHost[0][1]]['dock'] = dockWidget
-                self.widgetData[self.dataHost[0][1]]['tab'] = tabWidget
-                self.widgetData[self.dataHost[0][1]]['ssh'] = ssh
-                self.statusbar.showMessage("Connected to " + self.dataHost[0][1])
-            else:
-                dockWidget = self.widgetData[self.dataHost[0][1]]['dock']
-
-            dockWidget.setVisible(True)
-            dockWidget.setFocus()
-            dockWidget.raise_()
-            dockWidget.show()
-            # self.mainWindow.addDockWidget(Qt.RohjDockWidgetArea, dockWidget)
-            self.tabber(tabName)
-
-    def tabber(self, name):
-        index = self.treeView.selectedIndexes()[0]
-        hostname = self.treeView.model().itemFromIndex(index).text()
-
-        currentData = {'hostname':self.dataHost[0][1],
-                    'username':self.dataHost[0][2],
-                    'password':HostConstant().decryptpwd(self.dataHost[0][3])
-                    }
-        tabWidget = self.widgetData[currentData['hostname']]['tab']
-
-        if name not in self.widgetData[currentData['hostname']]:
-            tab = QWidget()
-            tabWidget.addTab(tab, name.title())
-            self.widgetData[currentData['hostname']][name] = tab
-        else:
-            tab = self.widgetData[currentData['hostname']][name]
-            tabWidget.addTab(tab, name.title())
-
-        tabWidget.setCurrentWidget(tab)
-        tab.show()
-
-    def tabberClose(self, i):
-        pos = QCursor.pos()
-        widgets = qApp.widgetAt(pos)
-        widgets.parentWidget().parentWidget().removeTab(i)'''
-
-    # def currentData(self, hostname):
-    #     return self.dbHandler.getSeverByGroup(hostname)
+        hostServer = self.dbHandler.getHostDetail(hostname)
 
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)

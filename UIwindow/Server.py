@@ -32,7 +32,13 @@ class server(UiSample):
         if self.mainWindow.sender().objectName() == 'MainMenuAddServer':
             self.serverDialog()
 
-    def serverDialog(self):
+    def editServer(self):
+        index = self.treeView.selectedIndexes()[0]
+        hostname = self.treeView.model().itemFromIndex(index).text()
+        hostServer = self.dbHandler.getHostDetail(hostname)
+        self.serverDialog(hostServer)
+
+    def serverDialog(self, hostServer = {}):
         self.qdialog = QDialog()
         self.qdialog.setWindowTitle("Add Server Details")
         self.qdialog.setWindowModality(Qt.ApplicationModal)
@@ -92,6 +98,21 @@ class server(UiSample):
         self.mailField = QLineEdit(formwidget)
         formLayout.setWidget(6, QFormLayout.FieldRole, self.mailField)
 
+        if ('hostname' in hostServer):
+            self.hostnameField.setText(hostServer['hostname'])
+        if ('username' in hostServer):
+            self.usernameField.setText(hostServer['username'])
+        if ('password' in hostServer):
+            self.passwordField.setText(self.constant.decryptpwd(hostServer['password']))
+        if ('port' in hostServer):
+            self.portField.setText(str(hostServer['port']))
+        if ('dir' in hostServer):
+            self.dirField.setText(hostServer['dir'])
+        if ('file_name' in hostServer):
+            self.fileField.setText(hostServer['file_name'])
+        if ('mail' in hostServer):
+            self.mailField.setText(hostServer['mail'])
+
         hostnameExp = QRegExp(self.domainOrIpRegex())
         hostnameValidator = QRegExpValidator(hostnameExp, self.hostnameField)
         self.hostnameField.setValidator(hostnameValidator)
@@ -138,10 +159,10 @@ class server(UiSample):
         addButton.setText('Save Server')
         formLayout.setWidget(7, QFormLayout.FieldRole, addButton)
 
-        addButton.clicked.connect(self.saveServer)
+        addButton.clicked.connect(lambda: self.saveServer(hostServer))
         self.qdialog.exec_()
 
-    def saveServer(self):
+    def saveServer(self, hostValue):
         newServerData = {
             'hostname': self.hostnameField.text(),
             'username': self.usernameField.text(),
@@ -167,17 +188,15 @@ class server(UiSample):
                                              QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes or not error:
-                # obj = DataObj(None, newServerData['hostname'], newServerData['username'], pwd, newServerData['port'], '/home/ravi/sample', '', '', '')
-                self.dbHandler.saveData(newServerData)
-
+                if hostValue:
+                    newServerData['did'] = hostValue['did']
+                    self.dbHandler.editData(newServerData)
+                else:
+                    self.dbHandler.saveData(newServerData)
                 self.generateTree()
-
                 self.qdialog.close()
                 QMessageBox.information(self.mainWindow, 'Warning', "Server details has been saved successfully",
                                         QMessageBox.Ok)
-
-    def editServer(self):
-        print ''
 
     def removeServer(self):
         index = self.treeView.selectedIndexes()[0]
