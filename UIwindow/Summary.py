@@ -10,6 +10,16 @@ class summary(UiSample):
         hostname = self.treeView.model().itemFromIndex(index).text()
         self.doubleClicked(hostname)
 
+        # data = self.dbHandler.getServerGrouped()
+        # print str(data)
+        #
+        # for d in data:
+        #     if d == hostname:
+        #         self.treeView.model().itemFromIndex(index).setBackground(QColor("white"))
+        #         self.treeView.clearSelection()
+        #         b = QBrush(Qt.yellow)
+        #         self.treeView.model().itemFromIndex(index).setBackground(b)
+
     def hostname(self, ssh):
         output = self.ssh.execute(ssh, 'hostname')
         self.detail['hostname'] = output.decode('utf-8')

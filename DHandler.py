@@ -124,13 +124,13 @@ class DbHandler:
 
     def saveMailData(self,mailData):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.mTName+" VALUES ('"+mailData['smtp']+"', '"+mailData['port']+"', '"+mailData['sender'] +"','"+mailData['password']+"','"+mailData['receiver']+"','"+mailData['sub']+"' )")
+        conn.execute("INSERT INTO "+HostConstant.mTName+" VALUES ('"+mailData['smtp']+"', '"+mailData['smtpPort']+"', '"+mailData['smtpMail'] +"','"+mailData['mailPwd']+"','"+mailData['receiver']+"','"+mailData['subject']+"' )")
         conn.commit()
         conn.close()
 
     def updateMailData(self, mid, data):
         conn = self.connectDb()
-        conn.execute("UPDATE " + HostConstant.mTName + " set " + HostConstant.smtp + " = '" + data['smtp'] + "', " + HostConstant.smtp_port + " = '" + data['port'] + "', " + HostConstant.email + " = '" + data['sender'] + "', " + HostConstant.pwd + " = '" + data['password'] + "', " + HostConstant.receiver + " = '" + data['receiver'] + "', " + HostConstant.sub + " = '" + data['sub'] + "' where "+HostConstant.email+" = '"+mid+"'")
+        conn.execute("UPDATE " + HostConstant.mTName + " set " + HostConstant.smtp + " = '" + data['smtp'] + "', " + HostConstant.smtp_port + " = '" + data['smtpPort'] + "', " + HostConstant.email + " = '" + data['smtpMail'] + "', " + HostConstant.pwd + " = '" + data['mailPwd'] + "', " + HostConstant.receiver + " = '" + data['receiver'] + "', " + HostConstant.sub + " = '" + data['subject'] + "' where "+HostConstant.email+" = '"+mid+"'")
         conn.commit()
         conn.close()
 
@@ -145,9 +145,11 @@ class DbHandler:
 
     def readMailData(self):
         conn = self.connectDb()
+        data = None
         cursor = conn.execute("SELECT "+ HostConstant.smtp +","+ HostConstant.smtp_port +","+ HostConstant.email +","+ HostConstant.pwd +","+ HostConstant.receiver +","+ HostConstant.sub +" FROM "+HostConstant.mTName)
         mylist = cursor.fetchone()
-        data = {'smtp':str(mylist[0]),'port': str(mylist[1]),'sender': str(mylist[2]),'password': str(mylist[3]),'receiver': str(mylist[4]),'sub': str(mylist[5])}
+        if mylist:
+            data = {'smtp':str(mylist[0]),'smtpPort': str(mylist[1]),'smtpMail': str(mylist[2]),'mailPwd': str(mylist[3]),'receiver': str(mylist[4]),'subject': str(mylist[5])}
         cursor.close()
         conn.close()
         return data

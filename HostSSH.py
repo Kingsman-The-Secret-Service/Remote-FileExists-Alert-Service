@@ -22,10 +22,10 @@ class SSHClient(HostConstant, DbHandler):
     def mailAlert(self, data):
         config = self.readMailData()
         smtp = config['smtp']
-        smtp_port = config['port']
-        mail = config['sender']
-        password = config['password']
-        subject = config['sub']
+        smtp_port = config['smtpPort']
+        mail = config['smtpMail']
+        password = config['mailPwd']
+        subject = config['subject']
 
         receiver = data['mail']
         if not receiver:
@@ -48,6 +48,24 @@ class SSHClient(HostConstant, DbHandler):
             print e
             return
 
+    def mailCheck(self, config):
+        server, error = None, None
+        smtp = config['smtp']
+        smtp_port = config['smtpPort']
+        mail = config['smtpMail']
+        password = config['mailPwd']
+        try:
+            server = smtplib.SMTP(smtp, int(smtp_port))
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(mail, password)
+        except Exception as e:
+            print e
+            error = True
+
+        return server, error
+
     def checkHost(self, hostData):
         error = None
         ssh = paramiko.SSHClient()
@@ -57,22 +75,22 @@ class SSHClient(HostConstant, DbHandler):
         except Exception as e:
             print e
             error = True
-        finally:
-            ssh.close()
+        # finally:
+        #     ssh.close()
         return ssh, error
 
     def connect_host(self, data):
         try:
             pwd = self.decryptpwd(data['password'])
             server, username, password = (data['hostname'], data['username'], pwd)
-            # port = data.getPort()
+            port = data['port']
             ssh = paramiko.SSHClient()
             # paramiko.util.log_to_file("ssh.log")
             sys.stdout.write('connecting host...')
             time.sleep(2)
             sys.stdout.flush()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            conn = ssh.connect(server, username=username, password=password)
+            conn = ssh.connect(server, port = port, username=username, password=password)
             if conn:
                 print 'connection failed'
             # self.startProgress()

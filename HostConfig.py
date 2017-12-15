@@ -61,6 +61,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 checkHostOption = raw_input('Failed to connect the server, Do you want continue?(y/n)')
                 if checkHostOption == 'n':
                     return
+            ssh.close()
             self.stopProgress()
 
 
@@ -248,11 +249,11 @@ class HostOptions(SSHClient, DbHandler, Mail):
             if config is None:
                 return
             table_data.append(['SMTP', config['smtp']])
-            table_data.append(['SMTP Port', config['port']])
-            table_data.append(['Email', config['sender']])
+            table_data.append(['SMTP Port', config['smtpPort']])
+            table_data.append(['Email', config['smtpMail']])
             table_data.append(['Password',' **********'])
             table_data.append(['Receiver', config['receiver']])
-            table_data.append(['Subject', config['sub']])
+            table_data.append(['Subject', config['subject']])
             table = AsciiTable(table_data)
             print table.table
 
@@ -264,7 +265,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 uMailInput = raw_input("Please enter the option: ")
 
             if int(uMailInput) == 1:
-                self.configMail(self,config['sender'])
+                self.configMail(self,config['smtpMail'])
             else:
                 return
         except KeyboardInterrupt:
@@ -390,7 +391,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
             checkHostOption = raw_input('Failed to connect the server, Do you want continue?(y/n)')
             if checkHostOption == 'n':
                 return
-
+        ssh.close()
         self.stopProgress()
 
         portValue = raw_input('Enter the port: ')

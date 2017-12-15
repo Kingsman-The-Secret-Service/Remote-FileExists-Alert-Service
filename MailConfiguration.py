@@ -11,11 +11,11 @@ class Mail:
     def initSetup(self):
         if self.db.readMailCountData() == 0:
             mailData = {'smtp':'smtp.gmail.com',
-                        'port':'587',
-                        'sender':'xxxxx@gmail.com',
-                        'password':'xxxxxxx',
+                        'smtpPort':'587',
+                        'smtpMail':'xxxxx@gmail.com',
+                        'mailPwd':'xxxxxxx',
                         'receiver':'yyyyyy@gmail.com',
-                        'sub':'File Created'
+                        'subject':'File Created'
                         }
             self.db.saveMailData(mailData)
 
@@ -41,11 +41,11 @@ class Mail:
                 subject = raw_input('Please enter the mail subject: ')
 
             mailData = {'smtp': smtp,
-                        'port': smtp_port,
-                        'sender': email,
-                        'password': password,
+                        'smtpPort': smtp_port,
+                        'smtpMail': email,
+                        'mailPwd': password,
                         'receiver': receiver,
-                        'sub': subject
+                        'subject': subject
                         }
             dbObj.updateMailData(mId, mailData)
         except KeyboardInterrupt:

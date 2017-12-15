@@ -1,4 +1,5 @@
 import sys, os, inspect
+import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
@@ -10,12 +11,14 @@ from DHandler import *
 from HostSSH import SSHClient
 from jinja2 import *
 from Constant import *
+from progress.waitingspinnerwidget import QtWaitingSpinner
 
 class UiSample(object):
     width = 900
     height = 700
     detail = {}
-    prevDockWidget = None
+    spinner = None
+    nilServer = None
 
     def __init__(self):
         super(UiSample, self).__init__()
@@ -40,6 +43,7 @@ class UiSample(object):
         self.menubar = QMenuBar(self.mainWindow)
         self.menubar.setObjectName("menubar")
         self.serverMenu()
+        self.mailSetupMenubar()
         self.sshMenubar()
         self.mainWindow.setMenuBar(self.menubar)
 
@@ -51,6 +55,13 @@ class UiSample(object):
         menuServer.addAction("Exit", self.exitApp)
         self.menubar.addAction(menuServer.menuAction())
 
+    def mailSetupMenubar(self):
+        menuSsh = QMenu(self.menubar)
+        menuSsh.setTitle("Mail")
+        menuSsh.addSeparator()
+        menuSsh.addAction("Setup", self.mailSetup)
+        self.menubar.addAction(menuSsh.menuAction())
+
     def sshMenubar(self):
         menuSsh = QMenu(self.menubar)
         menuSsh.setTitle("SSH")
@@ -59,6 +70,13 @@ class UiSample(object):
         menuSsh.addSeparator()
         menuSsh.addAction("Help", self.helpMenu)
         self.menubar.addAction(menuSsh.menuAction())
+
+    def mailSetup(self):
+        mailData = self.dbHandler.readMailData()
+        if mailData is None:
+            self.addMailConfig()
+        else:
+            self.addMailConfig(mailData)
 
     def exitApp(self):
         sys.exit()
@@ -74,6 +92,16 @@ class UiSample(object):
         hbox = QHBoxLayout()
         self.leftFrame = QFrame()
         self.treeView = QTreeView()
+        self.treeView.setStyleSheet("""
+        .QTreeView {
+            color: blue;
+        }
+        .QTreeView::item:selected {
+            color: black;
+        }
+        QTreeView::branch {
+            background-color: white;
+        }""")
         self.treeView.setMaximumSize(QSize(200, 16777215))
         self.treeView.setGeometry(QRect(10, 10, 200, self.height))
         self.treeView.setObjectName("treeView")
@@ -85,6 +113,7 @@ class UiSample(object):
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.doubleClicked.connect(self.summary)
+        self.treeView.setAlternatingRowColors(True)
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.treeView)
         qwidget.setLayout(leftLayout)
@@ -99,10 +128,17 @@ class UiSample(object):
         boxlayout.addWidget(title)
         qboxWidget.setLayout(boxlayout)
 
+        qtableWidget = QWidget()
+        qtableLayout = QHBoxLayout()
         self.tableHostWidget = QTableWidget()
+        qtableLayout.addWidget(self.tableHostWidget)
+        self.spinner = QtWaitingSpinner(qtableWidget)
+        # qtableLayout.addWidget(self.spinner)
+        # self.spinner.start()
+        qtableWidget.setLayout(qtableLayout)
         layout.setContentsMargins(10,10,0,0)
-        layout.addWidget(qboxWidget, 0, Qt.AlignTop)
 
+        layout.addWidget(qboxWidget, 0, Qt.AlignTop)
         layout.addWidget(self.tableHostWidget, 1, Qt.AlignTop)
 
         self.tableSummaryWidget = QTableWidget()
@@ -134,6 +170,7 @@ class UiSample(object):
             menu.addSeparator()
             menu.addAction("Remove Group", self.removeServer)
             menu.addAction("Run", self.runServer)
+            menu.addAction("Stop", self.stopServer)
             menu.addSeparator()
             menu.addAction("Edit Server", self.editServer)
         elif level == 1:
@@ -167,7 +204,6 @@ class UiSample(object):
         self.tableHostWidget.setItem(4, 0, QTableWidgetItem("Email"))
         self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['mail']))
 
-        self.tableHostWidget.move(10, 50)
         self.tableHostWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableHostWidget.resizeColumnsToContents()
         self.tableHostWidget.setMaximumHeight(160)
@@ -211,6 +247,21 @@ class UiSample(object):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
         hostServer = self.dbHandler.getHostDetail(hostname)
+        self.dbHandler.updateFileData('', hostServer['hostname'])
+        self.ssh.connect_host(hostServer)
+        # To-do background task
+
+        # while self.nilServer is None:
+        #     self.myThread = myThread(hostServer)
+        #     self.myThread.start()
+        #     time.sleep(10)
+
+
+    def stopServer(self):
+        print 'test'
+    #     self.myThread.quit()
+    #     self.myThread.stop()
+    #     self.nilServer = True
 
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)
