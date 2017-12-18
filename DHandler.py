@@ -20,7 +20,8 @@ class DbHandler:
                                              ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
                                              ''' + HostConstant.fname + ''' TEXT,\
                                               ''' + HostConstant.email + ''' TEXT,\
-                                             ''' + HostConstant.fwatch + ''' TEXT);''')
+                                             ''' + HostConstant.fwatch + ''' TEXT, \
+                                             ''' + HostConstant.iswatch + ''' TEXT);''')
 
             conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
                                                       (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
@@ -32,7 +33,7 @@ class DbHandler:
 
     def saveData(self, obj):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj['hostname']+"', '"+obj['username']+"', '"+obj['password']+"',"+obj['port']+",'"+obj['dir']+"','"+obj['file_name']+"','"+obj['mail']+"','"+obj['fwatcher']+"' )")
+        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj['hostname']+"', '"+obj['username']+"', '"+obj['password']+"',"+obj['port']+",'"+obj['dir']+"','"+obj['file_name']+"','"+obj['mail']+"','"+obj['fwatcher']+"','"+obj['is_watching']+"' )")
         conn.commit()
         conn.close()
 
@@ -54,9 +55,9 @@ class DbHandler:
         conn.commit()
         conn.close()
 
-    def updateFileData(self,fileData, host):
+    def updateFileData(self,fileData,isWatch, host):
         conn = self.connectDb()
-        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.fwatch+" = '"+fileData+"' where  "+HostConstant.host+" = '"+host+"'")
+        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.fwatch+" = '"+fileData+"',"+HostConstant.iswatch+" = '"+isWatch+"' where  "+HostConstant.host+" = '"+host+"'")
         conn.commit()
         conn.close()
 
@@ -110,7 +111,7 @@ class DbHandler:
         conn = self.connectDb()
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName+" where "+HostConstant.host+" = '" + hostname + "'")
         datas = cursor.fetchone()
-        hostServer  = {'did':datas[0], 'hostname':datas[1],'username':datas[2],'password':datas[3],'port':datas[4], 'dir':datas[5],'file_name':datas[6],'mail':datas[7]}
+        hostServer  = {'did':datas[0], 'hostname':datas[1],'username':datas[2],'password':datas[3],'port':datas[4], 'dir':datas[5],'file_name':datas[6],'mail':datas[7], 'fwatch':datas[8], 'iswatch':datas[9]}
         return hostServer
 
     def selectMethod(self, did):

@@ -168,7 +168,7 @@ class server(UiSample):
             'password': self.passwordField.text(),
             'port': self.portField.text(),
             'dir' : self.dirField.text(),
-            'mail':self.mailField.text()
+            'mail':self.mailField.text(),
         }
 
         if not self.validateServerFormOnSubmit(newServerData):
@@ -178,6 +178,7 @@ class server(UiSample):
             pwd = self.constant.encryptpwd(newServerData['password'])
             newServerData['password'] = pwd
             newServerData['fwatcher'] = ''
+            newServerData['is_watching'] = 'No'
             newServerData['file_name'] = self.fileField.text()
             # newServerData['email'] = self.mailField.text()
 

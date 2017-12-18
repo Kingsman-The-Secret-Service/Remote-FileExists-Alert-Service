@@ -41,6 +41,7 @@ class HostConstant:
     fname ='file_name'
     email ='email'
     fwatch = 'f_watcher'
+    iswatch = 'is_watching'
 
     mTName = 'config'
     smtp = 'smtp'

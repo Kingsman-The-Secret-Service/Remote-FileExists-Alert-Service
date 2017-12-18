@@ -3,6 +3,7 @@ import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
+from PyQt5 import QtCore
 import json
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -11,7 +12,23 @@ from DHandler import *
 from HostSSH import SSHClient
 from jinja2 import *
 from Constant import *
-from progress.waitingspinnerwidget import QtWaitingSpinner
+
+class Job(QRunnable):
+    event = True
+    def __init__(self, data, sftp):
+        super(Job, self).__init__()
+        self.ssh = SSHClient()
+        self.data = data
+        self.sftp = sftp
+
+    def run(self):
+        while self.event:
+            time.sleep(3)
+            print 'hello'
+            self.ssh.checkFileEntries(self.data, self.sftp)
+    def stopRun(self):
+        self.event = False
+        self.sftp.close()
 
 class UiSample(object):
     width = 900
@@ -23,8 +40,8 @@ class UiSample(object):
     def __init__(self):
         super(UiSample, self).__init__()
         self.dbHandler = DbHandler()
-        self.constant = HostConstant()
         self.ssh = SSHClient()
+        self.constant = HostConstant()
         self.initUI()
 
     def initUI(self):
@@ -132,14 +149,12 @@ class UiSample(object):
         qtableLayout = QHBoxLayout()
         self.tableHostWidget = QTableWidget()
         qtableLayout.addWidget(self.tableHostWidget)
-        self.spinner = QtWaitingSpinner(qtableWidget)
-        # qtableLayout.addWidget(self.spinner)
-        # self.spinner.start()
         qtableWidget.setLayout(qtableLayout)
         layout.setContentsMargins(10,10,0,0)
 
         layout.addWidget(qboxWidget, 0, Qt.AlignTop)
         layout.addWidget(self.tableHostWidget, 1, Qt.AlignTop)
+        layout.addWidget(player, 2, Qt.AlignTop)
 
         self.tableSummaryWidget = QTableWidget()
         layout.addWidget(self.tableSummaryWidget, 2, Qt.AlignTop)
@@ -165,12 +180,15 @@ class UiSample(object):
                 level += 1
 
         menu = QMenu()
+        hserver = self.getHostServer()
         if level == 0:
             menu.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
             menu.addSeparator()
             menu.addAction("Remove Group", self.removeServer)
-            menu.addAction("Run", self.runServer)
-            menu.addAction("Stop", self.stopServer)
+            if hserver['iswatch'] == 'No':
+                menu.addAction("Run", self.runServer)
+            else:
+                menu.addAction("Stop", self.stopServer)
             menu.addSeparator()
             menu.addAction("Edit Server", self.editServer)
         elif level == 1:
@@ -184,7 +202,7 @@ class UiSample(object):
     def doubleClicked(self, name):
         self.rightWidget.setVisible(True)
         hostServer = self.dbHandler.getHostDetail(name)
-        self.tableHostWidget.setRowCount(5)
+        self.tableHostWidget.setRowCount(6)
         self.tableHostWidget.setColumnCount(2)
 
         self.tableHostWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
@@ -203,23 +221,25 @@ class UiSample(object):
         self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['file_name']))
         self.tableHostWidget.setItem(4, 0, QTableWidgetItem("Email"))
         self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['mail']))
+        self.tableHostWidget.setItem(5, 0, QTableWidgetItem("Is Watching"))
+        self.tableHostWidget.setItem(5, 1, QTableWidgetItem(hostServer['iswatch']))
 
         self.tableHostWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableHostWidget.resizeColumnsToContents()
-        self.tableHostWidget.setMaximumHeight(160)
+        self.tableHostWidget.setMaximumHeight(185)
         self.tableHostWidget.setMaximumWidth(350)
 
         hostServer['password'] = self.constant.decryptpwd(hostServer['password'])
-        sshClient, error = self.ssh.checkHost(hostServer)
+        self.sshClient, error = self.ssh.checkHost(hostServer)
 
         if error is None:
-            self.hostname(sshClient)
-            self.uptime(sshClient)
-            self.kernelname(sshClient)
-            self.kernelrelease(sshClient)
-            self.osname(sshClient)
-            self.processor(sshClient)
-            sshClient.close()
+            self.hostname(self.sshClient)
+            self.uptime(self.sshClient)
+            self.kernelname(self.sshClient)
+            self.kernelrelease(self.sshClient)
+            self.osname(self.sshClient)
+            self.processor(self.sshClient)
+
             self.tableSummaryWidget.setRowCount(5)
             self.tableSummaryWidget.setColumnCount(2)
             self.tableSummaryWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
@@ -244,38 +264,39 @@ class UiSample(object):
             self.tableSummaryWidget.setMaximumWidth(400)
 
     def runServer(self):
-        index = self.treeView.selectedIndexes()[0]
-        hostname = self.treeView.model().itemFromIndex(index).text()
-        hostServer = self.dbHandler.getHostDetail(hostname)
-        self.dbHandler.updateFileData('', hostServer['hostname'])
-        self.ssh.connect_host(hostServer)
-        # To-do background task
-
-        # while self.nilServer is None:
-        #     self.myThread = myThread(hostServer)
-        #     self.myThread.start()
-        #     time.sleep(10)
-
+        hostServer = self.getHostServer()
+        self.dbHandler.updateFileData('','Yes', hostServer['hostname'])
+        self.doubleClicked(hostServer['hostname'])
+        sftp = self.ssh.check_host_server(self.sshClient)
+        self.job = Job(hostServer, sftp)
+        QThreadPool.globalInstance().start(self.job)
 
     def stopServer(self):
+        hostServer = self.getHostServer()
+        self.job.stopRun()
+        self.sshClient.close()
+        self.dbHandler.updateFileData('','No', hostServer['hostname'])
         print 'test'
-    #     self.myThread.quit()
-    #     self.myThread.stop()
-    #     self.nilServer = True
+        self.doubleClicked(hostServer['hostname'])
+
+    def getHostServer(self):
+        index = self.treeView.selectedIndexes()[0]
+        hostname = self.treeView.model().itemFromIndex(index).text()
+        return  self.dbHandler.getHostDetail(hostname)
 
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)
         self.mainWindow.setStatusBar(self.statusbar)
 
-    def render(self, fileName, data):
-        currentDirectoryPath = os.path.dirname(os.path.realpath(__file__))
-        templatePath = currentDirectoryPath + '/templates/'
-        staticPath = 'file://' + currentDirectoryPath + '/static/'
-
-        env = Environment(
-            loader=FileSystemLoader(templatePath)
-        )
-
-        template = env.get_template(fileName)
-        html = template.render(data, staticPath=staticPath)
-        return html
+    # def render(self, fileName, data):
+    #     currentDirectoryPath = os.path.dirname(os.path.realpath(__file__))
+    #     templatePath = currentDirectoryPath + '/templates/'
+    #     staticPath = 'file://' + currentDirectoryPath + '/static/'
+    #
+    #     env = Environment(
+    #         loader=FileSystemLoader(templatePath)
+    #     )
+    #
+    #     template = env.get_template(fileName)
+    #     html = template.render(data, staticPath=staticPath)
+    #     return html

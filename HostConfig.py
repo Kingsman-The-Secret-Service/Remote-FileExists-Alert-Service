@@ -90,7 +90,8 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 'dir':dir_path,
                 'file_name':file_name,
                 'mail':email,
-                'fwatcher':''
+                'fwatcher':'',
+                'is_watching':'No'
             }
             self.saveData(hostData)
             # self.createJsonFile()
@@ -177,7 +178,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
     def hostWatcher(self, index):
         try:
             hdetails = self.selectMethod(index)
-            self.updateFileData('', hdetails['hostname'])
+            self.updateFileData('','Yes', hdetails['hostname'])
             self.startProgress()
             while True:
                 self.connect_host(hdetails)
@@ -185,7 +186,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         except KeyboardInterrupt:
             self.stopProgress()
             hdetails = self.selectMethod(index)
-            self.updateFileData('', hdetails['hostname'])
+            self.updateFileData('','No', hdetails['hostname'])
             print 'Host watching stopped'
             return
 
@@ -198,7 +199,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         except KeyboardInterrupt:
             self.stopProgress()
             for h in list:
-                self.updateFileData('', h['hostname'])
+                self.updateFileData('','No', h['hostname'])
             print 'Host watching stopped'
             return
 

@@ -85,7 +85,6 @@ class SSHClient(HostConstant, DbHandler):
             server, username, password = (data['hostname'], data['username'], pwd)
             port = data['port']
             ssh = paramiko.SSHClient()
-            # paramiko.util.log_to_file("ssh.log")
             sys.stdout.write('connecting host...')
             time.sleep(2)
             sys.stdout.flush()
@@ -93,7 +92,6 @@ class SSHClient(HostConstant, DbHandler):
             conn = ssh.connect(server, port = port, username=username, password=password)
             if conn:
                 print 'connection failed'
-            # self.startProgress()
             sftp = ssh.open_sftp()
             try:
                 folderPath = str(data['dir'])
@@ -105,7 +103,7 @@ class SSHClient(HostConstant, DbHandler):
                     if myFs == myString:
                         return
                     else:
-                        self.updateFileData(myString, data['hostname'])
+                        self.updateFileData(myString, 'Yes',data['hostname'])
 
                     fileExt = str(data['file_name'])
                     if not fileExt:
@@ -138,6 +136,44 @@ class SSHClient(HostConstant, DbHandler):
         except paramiko.AuthenticationException:
             output = "Authentication Failed"
             print output
+
+    def check_host_server(self, ssh):
+        sftp = ssh.open_sftp()
+        return sftp
+
+    def checkFileEntries(self, data, sftp):
+        # sftp = ssh.open_sftp()
+        try:
+            folderPath = str(data['dir'])
+            list = sftp.listdir(folderPath)
+            if not list == []:
+                list.sort()
+                myString = ",".join(list)
+                myFs = self.readFileData(data['hostname'])
+                if myFs == myString:
+                    return
+                else:
+                    self.updateFileData(myString, 'Yes', data['hostname'])
+
+                fileExt = str(data['file_name'])
+                if not fileExt:
+                    self.mailAlert(data)
+                else:
+                    patern = re.compile(r"[^\\]%s$" % fileExt, re.I)
+                    filtered_files = [f for f in list if patern.search(f)]
+                    if filtered_files == []:
+                        if any(fileExt in s for s in list):
+                            self.mailAlert(data)
+                        else:
+                            print 'No'
+                    else:
+                        self.mailAlert(data)
+                        print filtered_files
+            else:
+                time.sleep(2)
+                sys.stdout.flush()
+        except Exception as e:
+            print e
 
     def execute(self, ssh, cmd):
         stdin, stdout, stderr = ssh.exec_command(cmd)
