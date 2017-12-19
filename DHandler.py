@@ -7,29 +7,28 @@ class DbHandler:
         return sqlite3.connect('host.db')
 
     def __init__(self):
-        dbExists = os.path.exists('host.db')
+        # dbExists = os.path.exists('host.db')
         conn = self.connectDb()
 
-        if not dbExists:
-            conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.tName + '''\
-                                              (''' + HostConstant.did + ''' Integer PRIMARY KEY AUTOINCREMENT,\
-                                             ''' + HostConstant.host + ''' TEXT NOT NULL,\
-                                             ''' + HostConstant.uname + ''' TEXT NOT NULL,\
-                                             ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
-                                             ''' + HostConstant.port + ''' INT,\
-                                             ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
-                                             ''' + HostConstant.fname + ''' TEXT,\
-                                              ''' + HostConstant.email + ''' TEXT,\
-                                             ''' + HostConstant.fwatch + ''' TEXT, \
-                                             ''' + HostConstant.iswatch + ''' TEXT);''')
-
-            conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
-                                                      (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
-                                                     ''' + HostConstant.smtp_port + ''' TEXT NOT NULL,\
-                                                     ''' + HostConstant.email + ''' TEXT NOT NULL,\
+        conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.tName + '''\
+                                                      (''' + HostConstant.did + ''' Integer PRIMARY KEY AUTOINCREMENT,\
+                                                     ''' + HostConstant.host + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.uname + ''' TEXT NOT NULL,\
                                                      ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
-                                                     ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
-                                                     ''' + HostConstant.sub + ''' TEXT);''')
+                                                     ''' + HostConstant.port + ''' INT,\
+                                                     ''' + HostConstant.dirpath + ''' TEXT NOT NULL,\
+                                                     ''' + HostConstant.fname + ''' TEXT,\
+                                                      ''' + HostConstant.email + ''' TEXT,\
+                                                     ''' + HostConstant.fwatch + ''' TEXT, \
+                                                     ''' + HostConstant.iswatch + ''' TEXT);''')
+
+        conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
+                                                              (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
+                                                             ''' + HostConstant.smtp_port + ''' TEXT NOT NULL,\
+                                                             ''' + HostConstant.email + ''' TEXT NOT NULL,\
+                                                             ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
+                                                             ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
+                                                             ''' + HostConstant.sub + ''' TEXT);''')
 
     def saveData(self, obj):
         conn = self.connectDb()
@@ -87,7 +86,7 @@ class DbHandler:
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName)
         list = []
         for row in cursor:
-            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7]}
+            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9]}
             list.append(hostServer)
         return list
 
@@ -122,6 +121,15 @@ class DbHandler:
         cursor.close()
         conn.close()
         return dbObj
+
+    def readHostCountData(self):
+        conn = self.connectDb()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM "+HostConstant.tName)
+        result = cursor.fetchall()
+        conn.commit()
+        conn.close()
+        return len(result)
 
     def saveMailData(self,mailData):
         conn = self.connectDb()

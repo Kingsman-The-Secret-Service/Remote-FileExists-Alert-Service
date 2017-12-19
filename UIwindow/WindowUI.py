@@ -5,30 +5,46 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
 from PyQt5 import QtCore
 import json
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 from DHandler import *
 from HostSSH import SSHClient
-from jinja2 import *
+# from jinja2 import *
 from Constant import *
+from progress.progress import *
 
 class Job(QRunnable):
     event = True
-    def __init__(self, data, sftp):
+    def __init__(self, data, sftp, runall):
         super(Job, self).__init__()
         self.ssh = SSHClient()
         self.data = data
         self.sftp = sftp
+        self.runall = runall
 
     def run(self):
-        while self.event:
-            time.sleep(3)
-            print 'hello'
-            self.ssh.checkFileEntries(self.data, self.sftp)
+        try:
+            if self.runall is None:
+                while self.event:
+                    print 'loading'
+                    # self.ssh.checkFileEntries(self.data, self.sftp)
+                    self.ssh.connect_host(self.data)
+                    time.sleep(10)
+            else:
+                while self.event:
+                    print 'loading'
+                    # self.ssh.checkFileEntries(self.data, self.sftp)
+                    self.ssh.calculateParallel(self.data, len(self.data))
+                    time.sleep(10)
+        except Exception as e:
+            print e
+
     def stopRun(self):
-        self.event = False
-        self.sftp.close()
+        if self.event:
+            self.event = False
+        print 'stopped'
 
 class UiSample(object):
     width = 900
@@ -36,6 +52,7 @@ class UiSample(object):
     detail = {}
     spinner = None
     nilServer = None
+    selectAll = None
 
     def __init__(self):
         super(UiSample, self).__init__()
@@ -127,6 +144,7 @@ class UiSample(object):
         self.treeView.setExpandsOnDoubleClick(True)
         self.treeView.setAnimated(True)
         self.treeView.setWordWrap(True)
+        # self.treeView.setSelectionMode(QAbstractItemView.MultiSelection)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.doubleClicked.connect(self.summary)
@@ -154,10 +172,19 @@ class UiSample(object):
 
         layout.addWidget(qboxWidget, 0, Qt.AlignTop)
         layout.addWidget(self.tableHostWidget, 1, Qt.AlignTop)
-        layout.addWidget(player, 2, Qt.AlignTop)
 
+        qsummarywidget = QWidget()
+        qsummarybox = QVBoxLayout()
         self.tableSummaryWidget = QTableWidget()
-        layout.addWidget(self.tableSummaryWidget, 2, Qt.AlignTop)
+        qsummarybox.addWidget(self.tableSummaryWidget)
+
+        currentPath = os.path.dirname(__file__)
+        gifPath = currentPath + "/searching.gif"
+        self.progressLabel = QTextMovieLabel('Watching...', gifPath)
+        qsummarybox.addWidget(self.progressLabel)
+        self.progressLabel.setVisible(False)
+        qsummarywidget.setLayout(qsummarybox)
+        layout.addWidget(qsummarywidget, 2, Qt.AlignTop)
         self.rightWidget.setLayout(layout)
 
         self.rightWidget.setVisible(False)
@@ -185,12 +212,22 @@ class UiSample(object):
             menu.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
             menu.addSeparator()
             menu.addAction("Remove Group", self.removeServer)
+            count = self.dbHandler.readHostCountData()
+            self.checkTreeviewSelected()
             if hserver['iswatch'] == 'No':
-                menu.addAction("Run", self.runServer)
+                if self.selectAll is None:
+                    menu.addAction("Run", self.runServer)
+                else:
+                    menu.addAction("Run All", self.runAllServer)
             else:
                 menu.addAction("Stop", self.stopServer)
             menu.addSeparator()
             menu.addAction("Edit Server", self.editServer)
+            if count > 1:
+                if self.selectAll is None:
+                    menu.addSeparator()
+                    menu.addAction("Select All", self.selectAllHosts)
+                    self.selectAll = True
         elif level == 1:
             menu.addAction("Summary")
             menu.addAction("Ftp")
@@ -198,6 +235,15 @@ class UiSample(object):
             menu.addAction("Edit Server")
             menu.addAction("Remove Server")
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
+
+    def selectAllHosts(self):
+        self.treeView.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.treeView.selectAll()
+
+    def checkTreeviewSelected(self):
+        indexes = self.treeView.selectedIndexes()
+        if len(indexes) == 1:
+            self.selectAll = None
 
     def doubleClicked(self, name):
         self.rightWidget.setVisible(True)
@@ -229,6 +275,10 @@ class UiSample(object):
         self.tableHostWidget.setMaximumHeight(185)
         self.tableHostWidget.setMaximumWidth(350)
 
+        if hostServer['iswatch'] == 'Yes':
+            self.progressLabel.setVisible(True)
+        else:
+            self.progressLabel.setVisible(False)
         hostServer['password'] = self.constant.decryptpwd(hostServer['password'])
         self.sshClient, error = self.ssh.checkHost(hostServer)
 
@@ -239,7 +289,7 @@ class UiSample(object):
             self.kernelrelease(self.sshClient)
             self.osname(self.sshClient)
             self.processor(self.sshClient)
-
+            self.sshClient.close()
             self.tableSummaryWidget.setRowCount(5)
             self.tableSummaryWidget.setColumnCount(2)
             self.tableSummaryWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
@@ -265,19 +315,28 @@ class UiSample(object):
 
     def runServer(self):
         hostServer = self.getHostServer()
-        self.dbHandler.updateFileData('','Yes', hostServer['hostname'])
+        # hostServer['password'] = self.constant.decryptpwd(hostServer['password'])
+        # self.sshHost, error = self.ssh.checkHost(hostServer)
+        # self.sftp = self.ssh.check_host_server(self.sshHost)
+        self.job = Job(hostServer, None, None)
+        QThreadPool.globalInstance().start(self.job)
+
+        self.dbHandler.updateFileData('', 'Yes', hostServer['hostname'])
         self.doubleClicked(hostServer['hostname'])
-        sftp = self.ssh.check_host_server(self.sshClient)
-        self.job = Job(hostServer, sftp)
+
+
+    def runAllServer(self):
+        hdetails = self.dbHandler.selectHostDetail()
+        self.job = Job(hdetails, None, True)
         QThreadPool.globalInstance().start(self.job)
 
     def stopServer(self):
         hostServer = self.getHostServer()
-        self.job.stopRun()
-        self.sshClient.close()
         self.dbHandler.updateFileData('','No', hostServer['hostname'])
-        print 'test'
         self.doubleClicked(hostServer['hostname'])
+        self.job.stopRun()
+        # self.sshHost.close()
+        # self.sftp.close()
 
     def getHostServer(self):
         index = self.treeView.selectedIndexes()[0]
