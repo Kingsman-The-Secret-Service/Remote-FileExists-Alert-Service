@@ -52,7 +52,6 @@ class UiSample(object):
     detail = {}
     spinner = None
     nilServer = None
-    selectAll = None
 
     def __init__(self):
         super(UiSample, self).__init__()
@@ -67,7 +66,7 @@ class UiSample(object):
         # self.mainWindow.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
         self.menuBar()
-        self.treeViewWidget()
+        self.windowSubWidget()
         self.statusBar()
 
         QMetaObject.connectSlotsByName(self.mainWindow)
@@ -76,17 +75,27 @@ class UiSample(object):
     def menuBar(self):
         self.menubar = QMenuBar(self.mainWindow)
         self.menubar.setObjectName("menubar")
+        self.relinAllMenu()
         self.serverMenu()
         self.mailSetupMenubar()
-        self.sshMenubar()
         self.mainWindow.setMenuBar(self.menubar)
+
+    def relinAllMenu(self):
+        menuRelin = QMenu(self.menubar)
+        menuRelin.setTitle("RelinAll")
+        menuRelin.addAction("About")
+        menuRelin.addSeparator()
+        menuRelin.addAction("Exit", self.exitApp)
+        self.menubar.addAction(menuRelin.menuAction())
 
     def serverMenu(self):
         menuServer = QMenu(self.menubar)
         menuServer.setTitle("Server")
         menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
         menuServer.addSeparator()
-        menuServer.addAction("Exit", self.exitApp)
+        count = self.dbHandler.readHostCountData()
+        if count > 1:
+            menuServer.addAction("Run All")
         self.menubar.addAction(menuServer.menuAction())
 
     def mailSetupMenubar(self):
@@ -94,15 +103,6 @@ class UiSample(object):
         menuSsh.setTitle("Mail")
         menuSsh.addSeparator()
         menuSsh.addAction("Setup", self.mailSetup)
-        self.menubar.addAction(menuSsh.menuAction())
-
-    def sshMenubar(self):
-        menuSsh = QMenu(self.menubar)
-        menuSsh.setTitle("SSH")
-        menuSsh.addSeparator()
-        menuSsh.addAction("About", self.aboutMenu)
-        menuSsh.addSeparator()
-        menuSsh.addAction("Help", self.helpMenu)
         self.menubar.addAction(menuSsh.menuAction())
 
     def mailSetup(self):
@@ -121,7 +121,7 @@ class UiSample(object):
     def helpMenu(self):
         print 'help'
 
-    def treeViewWidget(self):
+    def windowSubWidget(self):
         qwidget = QWidget()
         hbox = QHBoxLayout()
         self.leftFrame = QFrame()
@@ -144,7 +144,6 @@ class UiSample(object):
         self.treeView.setExpandsOnDoubleClick(True)
         self.treeView.setAnimated(True)
         self.treeView.setWordWrap(True)
-        # self.treeView.setSelectionMode(QAbstractItemView.MultiSelection)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.doubleClicked.connect(self.summary)
@@ -154,39 +153,72 @@ class UiSample(object):
         qwidget.setLayout(leftLayout)
 
         self.rightWidget = QWidget()
+        self.rightWidget.setStyleSheet("background-color: white")
         layout = QVBoxLayout()
         layout.setSpacing(10)
 
+        self.qbtnWidget = QWidget()
+        qbtnLayout = QVBoxLayout()
+        self.qHostTable = QTableWidget()
+        self.qHostTable.setStyleSheet("QTableView { border: none;}")
+
+        hdetails = self.dbHandler.selectHostDetail()
+        self.qHostTable.setRowCount(len(hdetails))
+        self.qHostTable.setColumnCount(3)
+        self.qHostTable.verticalHeader().hide()
+        self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username', 'Status'])
+        for index, element in enumerate(hdetails):
+            btn_edit = QPushButton()
+            btn_edit.setText(element['hostname'])
+            btn_edit.clicked.connect(self.hostBtn)
+            self.qHostTable.setCellWidget(index, 0, btn_edit)
+            self.qHostTable.setItem(index, 1, QTableWidgetItem(element['username']))
+            self.qHostTable.setItem(index, 2, QTableWidgetItem(element['iswatch']))
+
+        self.qHostTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.qHostTable.resizeColumnsToContents()
+        self.qHostTable.cellClicked.connect(self.cellClick)
+        qbutton = QPushButton('click')
+        qbutton.clicked.connect(lambda:self.whichbtn('test'))
+        qbtnLayout.addWidget(qbutton)
+        qbtnLayout.addWidget(self.qHostTable)
+        self.qbtnWidget.setLayout(qbtnLayout)
+        self.qbtnWidget.setVisible(True)
+        # layout.addWidget(self.qbtnWidget)
+
+        ###
         title = QLabel('----- Summary -----')
-        qboxWidget = QWidget()
+        self.qboxWidget = QWidget()
         boxlayout = QVBoxLayout()
         boxlayout.addWidget(title)
-        qboxWidget.setLayout(boxlayout)
-
+        self.qboxWidget.setLayout(boxlayout)
         qtableWidget = QWidget()
         qtableLayout = QHBoxLayout()
         self.tableHostWidget = QTableWidget()
+        self.tableHostWidget.setStyleSheet("QTableView { border: none;}")
         qtableLayout.addWidget(self.tableHostWidget)
         qtableWidget.setLayout(qtableLayout)
         layout.setContentsMargins(10,10,0,0)
-
-        layout.addWidget(qboxWidget, 0, Qt.AlignTop)
+        layout.addWidget(self.qboxWidget, 0, Qt.AlignTop)
         layout.addWidget(self.tableHostWidget, 1, Qt.AlignTop)
-
-        qsummarywidget = QWidget()
+        self.qsummarywidget = QWidget()
         qsummarybox = QVBoxLayout()
         self.tableSummaryWidget = QTableWidget()
+        self.tableSummaryWidget.setStyleSheet("QTableView { border: none;}")
         qsummarybox.addWidget(self.tableSummaryWidget)
-
         currentPath = os.path.dirname(__file__)
         gifPath = currentPath + "/searching.gif"
         self.progressLabel = QTextMovieLabel('Watching...', gifPath)
         qsummarybox.addWidget(self.progressLabel)
         self.progressLabel.setVisible(False)
-        qsummarywidget.setLayout(qsummarybox)
-        layout.addWidget(qsummarywidget, 2, Qt.AlignTop)
+        self.qsummarywidget.setLayout(qsummarybox)
+        layout.addWidget(self.qsummarywidget, 2, Qt.AlignTop)
+        self.qboxWidget.setVisible(False)
+        self.tableHostWidget.setVisible(False)
+        self.qsummarywidget.setVisible(False)
+        #####
+        layout.addWidget(self.qbtnWidget)
         self.rightWidget.setLayout(layout)
-
         self.rightWidget.setVisible(False)
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(qwidget)
@@ -197,8 +229,33 @@ class UiSample(object):
         centerWidget.setLayout(hbox)
         self.mainWindow.setCentralWidget(centerWidget)
 
+    def cellClick(self, row, col):
+        print "Click on " + str(row) + " " + str(col)
+
+    def hostBtn(self):
+        hdetails = self.dbHandler.selectHostDetail()
+        clickme = qApp.focusWidget()
+        index = self.qHostTable.indexAt(clickme.pos())
+        if index.isValid():
+            print (index.row(), index.column())
+            hosts = hdetails[index.row()]
+            self.qbtnWidget.setVisible(False)
+            self.qHostTable.setVisible(False)
+            self.qboxWidget.setVisible(True)
+            self.tableHostWidget.setVisible(True)
+            self.qsummarywidget.setVisible(True)
+            self.doubleClicked(hosts['hostname'])
+
+    def whichbtn(self,test):
+        print 'clicked'
+        self.qbtnWidget.setVisible(False)
+        self.qboxWidget.setVisible(True)
+        self.tableHostWidget.setVisible(True)
+        self.qsummarywidget.setVisible(True)
+
     def openMenu(self, position):
         indexes = self.treeView.selectedIndexes()
+        print len(indexes)
         if len(indexes) > 0:
             level = 0
             index = indexes[0]
@@ -209,41 +266,20 @@ class UiSample(object):
         menu = QMenu()
         hserver = self.getHostServer()
         if level == 0:
-            menu.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
-            menu.addSeparator()
-            menu.addAction("Remove Group", self.removeServer)
-            count = self.dbHandler.readHostCountData()
-            self.checkTreeviewSelected()
             if hserver['iswatch'] == 'No':
-                if self.selectAll is None:
-                    menu.addAction("Run", self.runServer)
-                else:
-                    menu.addAction("Run All", self.runAllServer)
+                menu.addAction("Run", self.runServer)
             else:
                 menu.addAction("Stop", self.stopServer)
             menu.addSeparator()
-            menu.addAction("Edit Server", self.editServer)
-            if count > 1:
-                if self.selectAll is None:
-                    menu.addSeparator()
-                    menu.addAction("Select All", self.selectAllHosts)
-                    self.selectAll = True
-        elif level == 1:
-            menu.addAction("Summary")
-            menu.addAction("Ftp")
-            menu.addSeparator()
+            menu.addAction("View", self.summary)
             menu.addAction("Edit Server")
-            menu.addAction("Remove Server")
+            menu.addAction("Remove", self.removeServer)
+            menu.addAction("Edit Server", self.editServer)
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
     def selectAllHosts(self):
         self.treeView.setSelectionMode(QAbstractItemView.ContiguousSelection)
         self.treeView.selectAll()
-
-    def checkTreeviewSelected(self):
-        indexes = self.treeView.selectedIndexes()
-        if len(indexes) == 1:
-            self.selectAll = None
 
     def doubleClicked(self, name):
         self.rightWidget.setVisible(True)
@@ -315,15 +351,10 @@ class UiSample(object):
 
     def runServer(self):
         hostServer = self.getHostServer()
-        # hostServer['password'] = self.constant.decryptpwd(hostServer['password'])
-        # self.sshHost, error = self.ssh.checkHost(hostServer)
-        # self.sftp = self.ssh.check_host_server(self.sshHost)
         self.job = Job(hostServer, None, None)
         QThreadPool.globalInstance().start(self.job)
-
         self.dbHandler.updateFileData('', 'Yes', hostServer['hostname'])
         self.doubleClicked(hostServer['hostname'])
-
 
     def runAllServer(self):
         hdetails = self.dbHandler.selectHostDetail()

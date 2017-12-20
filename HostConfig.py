@@ -199,7 +199,7 @@ class HostOptions(SSHClient, DbHandler, Mail):
         except KeyboardInterrupt:
             self.stopProgress()
             for h in list:
-                self.updateFileData('','No', h['hostname'])
+                self.updateFileData('','Yes', h['hostname'])
             print 'Host watching stopped'
             return
 

@@ -5,15 +5,7 @@ class summary(UiSample):
     def __init__(self):
         super(summary, self).__init__()
 
-    def summary(self):
-        indexes = self.treeView.selectedIndexes()
-        for index in indexes:
-            # We only care about the "Selected" column.
-            if index.column() != 1:
-                continue
-
-            self.treeView.setData(index, "[SELECTED]")
-
+    def summary(self, ):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
         self.doubleClicked(hostname)
