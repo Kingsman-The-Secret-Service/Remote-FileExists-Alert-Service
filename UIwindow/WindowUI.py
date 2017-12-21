@@ -17,34 +17,23 @@ from progress.progress import *
 
 class Job(QRunnable):
     event = True
-    def __init__(self, data, sftp, runall):
+    def __init__(self):
         super(Job, self).__init__()
         self.ssh = SSHClient()
-        self.data = data
-        self.sftp = sftp
-        self.runall = runall
+        self.db = DbHandler()
 
     def run(self):
         try:
-            if self.runall is None:
-                while self.event:
-                    print 'loading'
-                    # self.ssh.checkFileEntries(self.data, self.sftp)
-                    self.ssh.connect_host(self.data)
-                    time.sleep(10)
-            else:
-                while self.event:
-                    print 'loading'
-                    # self.ssh.checkFileEntries(self.data, self.sftp)
-                    self.ssh.calculateParallel(self.data, len(self.data))
-                    time.sleep(10)
+            while self.event:
+                self.runningHost = []
+                self.runningHost = self.db.selectWatchingHostDetail()
+                if self.runningHost == [] or len(self.runningHost) == 0:
+                    self.event = False
+                else:
+                    self.ssh.calculateParallel(self.runningHost, len(self.runningHost))
+                    time.sleep(5)
         except Exception as e:
             print e
-
-    def stopRun(self):
-        if self.event:
-            self.event = False
-        print 'stopped'
 
 class UiSample(object):
     width = 900
@@ -52,6 +41,7 @@ class UiSample(object):
     detail = {}
     spinner = None
     nilServer = None
+    job = None
 
     def __init__(self):
         super(UiSample, self).__init__()
@@ -62,8 +52,8 @@ class UiSample(object):
 
     def initUI(self):
         self.mainWindow = QMainWindow()
+        self.mainWindow.setWindowTitle('ReLinAll')
         self.mainWindow.resize(self.width, self.height)
-        # self.mainWindow.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
         self.menuBar()
         self.windowSubWidget()
@@ -82,7 +72,7 @@ class UiSample(object):
 
     def relinAllMenu(self):
         menuRelin = QMenu(self.menubar)
-        menuRelin.setTitle("RelinAll")
+        menuRelin.setTitle("ReLinAll")
         menuRelin.addAction("About")
         menuRelin.addSeparator()
         menuRelin.addAction("Exit", self.exitApp)
@@ -95,7 +85,11 @@ class UiSample(object):
         menuServer.addSeparator()
         count = self.dbHandler.readHostCountData()
         if count > 1:
-            menuServer.addAction("Run All")
+            currentRunning = self.dbHandler.selectWatchingHostDetail()
+            if len(currentRunning ) > 1:
+                menuServer.addAction("Stop All", self.runAllServer)
+            else:
+                menuServer.addAction("Run All", self.runAllServer)
         self.menubar.addAction(menuServer.menuAction())
 
     def mailSetupMenubar(self):
@@ -146,7 +140,7 @@ class UiSample(object):
         self.treeView.setWordWrap(True)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.openMenu)
-        self.treeView.doubleClicked.connect(self.summary)
+        self.treeView.doubleClicked.connect(self.loadHostTable)
         self.treeView.setAlternatingRowColors(True)
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.treeView)
@@ -160,33 +154,17 @@ class UiSample(object):
         self.qbtnWidget = QWidget()
         qbtnLayout = QVBoxLayout()
         self.qHostTable = QTableWidget()
-        self.qHostTable.setStyleSheet("QTableView { border: none;}")
-
-        hdetails = self.dbHandler.selectHostDetail()
-        self.qHostTable.setRowCount(len(hdetails))
-        self.qHostTable.setColumnCount(3)
-        self.qHostTable.verticalHeader().hide()
-        self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username', 'Status'])
-        for index, element in enumerate(hdetails):
-            btn_edit = QPushButton()
-            btn_edit.setText(element['hostname'])
-            btn_edit.clicked.connect(self.hostBtn)
-            self.qHostTable.setCellWidget(index, 0, btn_edit)
-            self.qHostTable.setItem(index, 1, QTableWidgetItem(element['username']))
-            self.qHostTable.setItem(index, 2, QTableWidgetItem(element['iswatch']))
-
-        self.qHostTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.qHostTable.resizeColumnsToContents()
-        self.qHostTable.cellClicked.connect(self.cellClick)
-        qbutton = QPushButton('click')
-        qbutton.clicked.connect(lambda:self.whichbtn('test'))
-        qbtnLayout.addWidget(qbutton)
         qbtnLayout.addWidget(self.qHostTable)
         self.qbtnWidget.setLayout(qbtnLayout)
-        self.qbtnWidget.setVisible(True)
-        # layout.addWidget(self.qbtnWidget)
+        self.qbtnWidget.setVisible(False)
 
         ###
+        self.qbutton = QPushButton('Back')
+        qbtnSize = QSize(45, 22)
+        self.qbutton.setFixedSize(qbtnSize)
+        self.qbutton.clicked.connect(self.backButton)
+        self.qbutton.setVisible(False)
+        layout.addWidget(self.qbutton)
         title = QLabel('----- Summary -----')
         self.qboxWidget = QWidget()
         boxlayout = QVBoxLayout()
@@ -229,6 +207,53 @@ class UiSample(object):
         centerWidget.setLayout(hbox)
         self.mainWindow.setCentralWidget(centerWidget)
 
+    def loadHostTable(self):
+        self.rightWidget.setVisible(True)
+        self.qbtnWidget.setVisible(True)
+        self.qHostTable.setVisible(True)
+        self.qboxWidget.setVisible(False)
+        self.tableHostWidget.setVisible(False)
+        self.qsummarywidget.setVisible(False)
+
+        self.qHostTable.setStyleSheet("QTableView { border: none;}")
+
+        hdetails = self.dbHandler.selectHostDetail()
+        self.qHostTable.setRowCount(len(hdetails))
+        self.qHostTable.setColumnCount(4)
+        self.qHostTable.verticalHeader().hide()
+        self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username','Status','Action'])
+        for index, element in enumerate(hdetails):
+            btn_edit = QPushButton()
+            btn_edit.setStyleSheet('text-decoration: underline; QPushButton { border: none;}')
+            btn_edit.setText(element['hostname'])
+            btn_edit.clicked.connect(self.hostBtn)
+            self.qHostTable.setCellWidget(index, 0, btn_edit)
+            self.qHostTable.setItem(index, 1, QTableWidgetItem(element['username']))
+
+            currentPath = os.path.dirname(__file__)
+            gifPath = currentPath + "/searching_resize.gif"
+            qbtnSize = QSize(150, 25)
+            if element['iswatch'] == 'Yes':
+                progress = QTextMovieLabel('',gifPath)
+                progress.setFixedSize(qbtnSize)
+                btnTitle = 'Stop'
+            else:
+                progress = QTextMovieLabel('Watching stopped ', '')
+                btnTitle = 'Run'
+            progress.setAlignment(Qt.AlignHCenter)
+            self.qHostTable.setCellWidget(index, 2, progress)
+
+            btn_stop = QPushButton()
+            btn_stop.setStyleSheet('text-decoration: underline; QPushButton { border: none;}')
+            btn_stop.setText(btnTitle)
+            btn_stop.clicked.connect(self.hostStopBtn)
+
+            self.qHostTable.setCellWidget(index, 3, btn_stop)
+
+        self.qHostTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.qHostTable.resizeColumnsToContents()
+        # self.qHostTable.cellClicked.connect(self.cellClick)
+
     def cellClick(self, row, col):
         print "Click on " + str(row) + " " + str(col)
 
@@ -244,18 +269,44 @@ class UiSample(object):
             self.qboxWidget.setVisible(True)
             self.tableHostWidget.setVisible(True)
             self.qsummarywidget.setVisible(True)
+            self.qbutton.setVisible(True)
             self.doubleClicked(hosts['hostname'])
 
-    def whichbtn(self,test):
-        print 'clicked'
+    def hostStopBtn(self):
+        hdetails = self.dbHandler.selectHostDetail()
+        clickme = qApp.focusWidget()
+        index = self.qHostTable.indexAt(clickme.pos())
+        if index.isValid():
+            host = hdetails[index.row()]
+            if host['iswatch'] == 'No':
+                self.dbHandler.updateWatcher('Yes', host['hostname'])
+                job = None
+                self.job = Job()
+                QThreadPool.globalInstance().start(self.job)
+            else:
+                self.dbHandler.updateFileData('', 'No', host['hostname'])
+            self.loadHostTable()
+
+    def backButton(self):
+        self.qbtnWidget.setVisible(True)
+        self.qHostTable.setVisible(True)
+        self.qboxWidget.setVisible(False)
+        self.tableHostWidget.setVisible(False)
+        self.qsummarywidget.setVisible(False)
+        self.qbutton.setVisible(False)
+        self.loadHostTable()
+
+    def viewSummary(self):
         self.qbtnWidget.setVisible(False)
+        self.qHostTable.setVisible(False)
         self.qboxWidget.setVisible(True)
         self.tableHostWidget.setVisible(True)
         self.qsummarywidget.setVisible(True)
+        self.qbutton.setVisible(False)
+        self.summary()
 
     def openMenu(self, position):
         indexes = self.treeView.selectedIndexes()
-        print len(indexes)
         if len(indexes) > 0:
             level = 0
             index = indexes[0]
@@ -271,10 +322,9 @@ class UiSample(object):
             else:
                 menu.addAction("Stop", self.stopServer)
             menu.addSeparator()
-            menu.addAction("View", self.summary)
-            menu.addAction("Edit Server")
-            menu.addAction("Remove", self.removeServer)
+            menu.addAction("View", self.viewSummary)
             menu.addAction("Edit Server", self.editServer)
+            menu.addAction("Remove", self.removeServer)
         menu.exec_(self.treeView.viewport().mapToGlobal(position))
 
     def selectAllHosts(self):
@@ -351,42 +401,34 @@ class UiSample(object):
 
     def runServer(self):
         hostServer = self.getHostServer()
-        self.job = Job(hostServer, None, None)
-        QThreadPool.globalInstance().start(self.job)
         self.dbHandler.updateFileData('', 'Yes', hostServer['hostname'])
-        self.doubleClicked(hostServer['hostname'])
+        job = None
+        self.job = Job()
+        QThreadPool.globalInstance().start(self.job)
+        self.loadHostTable()
+        # self.doubleClicked(hostServer['hostname'])
 
     def runAllServer(self):
+        print 'hello'
         hdetails = self.dbHandler.selectHostDetail()
-        self.job = Job(hdetails, None, True)
+        for host in hdetails:
+            if host['iswatch'] == 'No':
+                self.dbHandler.updateWatcher('Yes', host['hostname'])
+        job = None
+        self.job = Job()
         QThreadPool.globalInstance().start(self.job)
+        self.loadHostTable()
 
     def stopServer(self):
         hostServer = self.getHostServer()
-        self.dbHandler.updateFileData('','No', hostServer['hostname'])
-        self.doubleClicked(hostServer['hostname'])
-        self.job.stopRun()
-        # self.sshHost.close()
-        # self.sftp.close()
+        self.dbHandler.updateFileData('', 'No', hostServer['hostname'])
+        self.loadHostTable()
 
     def getHostServer(self):
         index = self.treeView.selectedIndexes()[0]
         hostname = self.treeView.model().itemFromIndex(index).text()
-        return  self.dbHandler.getHostDetail(hostname)
+        return self.dbHandler.getHostDetail(hostname)
 
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)
         self.mainWindow.setStatusBar(self.statusbar)
-
-    # def render(self, fileName, data):
-    #     currentDirectoryPath = os.path.dirname(os.path.realpath(__file__))
-    #     templatePath = currentDirectoryPath + '/templates/'
-    #     staticPath = 'file://' + currentDirectoryPath + '/static/'
-    #
-    #     env = Environment(
-    #         loader=FileSystemLoader(templatePath)
-    #     )
-    #
-    #     template = env.get_template(fileName)
-    #     html = template.render(data, staticPath=staticPath)
-    #     return html

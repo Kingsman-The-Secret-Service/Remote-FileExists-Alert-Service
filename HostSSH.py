@@ -85,7 +85,8 @@ class SSHClient(HostConstant, DbHandler):
             server, username, password = (data['hostname'], data['username'], pwd)
             port = data['port']
             ssh = paramiko.SSHClient()
-            sys.stdout.write('connecting host...')
+            sys.stdout.write('\nconnecting host...')
+            print data['hostname']
             time.sleep(2)
             sys.stdout.flush()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -103,7 +104,7 @@ class SSHClient(HostConstant, DbHandler):
                     if myFs == myString:
                         return
                     else:
-                        self.updateFileData(myString, 'Yes',data['hostname'])
+                        self.updateFiles(myString,data['hostname'])
 
                     fileExt = str(data['file_name'])
                     if not fileExt:
@@ -153,7 +154,7 @@ class SSHClient(HostConstant, DbHandler):
                 if myFs == myString:
                     return
                 else:
-                    self.updateFileData(myString, 'Yes', data['hostname'])
+                    self.updateFiles(myString, data['hostname'])
 
                 fileExt = str(data['file_name'])
                 if not fileExt:

@@ -54,6 +54,19 @@ class DbHandler:
         conn.commit()
         conn.close()
 
+    def updateFiles(self,fileData, host):
+        conn = self.connectDb()
+        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.fwatch+" = '"+fileData+"' where  "+HostConstant.host+" = '"+host+"'")
+        conn.commit()
+        conn.close()
+
+    def updateWatcher(self, isWatch, host):
+        conn = self.connectDb()
+        conn.execute(
+            "UPDATE " + HostConstant.tName + " set "+ HostConstant.iswatch + " = '" + isWatch + "' where  " + HostConstant.host + " = '" + host + "'")
+        conn.commit()
+        conn.close()
+
     def updateFileData(self,fileData,isWatch, host):
         conn = self.connectDb()
         conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.fwatch+" = '"+fileData+"',"+HostConstant.iswatch+" = '"+isWatch+"' where  "+HostConstant.host+" = '"+host+"'")
@@ -84,6 +97,15 @@ class DbHandler:
     def selectHostDetail(self):
         conn = self.connectDb()
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName)
+        list = []
+        for row in cursor:
+            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9]}
+            list.append(hostServer)
+        return list
+
+    def selectWatchingHostDetail(self):
+        conn = self.connectDb()
+        cursor = conn.execute("SELECT * FROM "+HostConstant.tName + " where "+ HostConstant.iswatch + " = 'Yes'")
         list = []
         for row in cursor:
             hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9]}
