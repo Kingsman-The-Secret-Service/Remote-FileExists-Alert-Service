@@ -183,10 +183,13 @@ class server(UiSample):
             # newServerData['email'] = self.mailField.text()
 
             if error:
+                newServerData['conn_status'] = 'Failed'
                 reply = QMessageBox.question(self.mainWindow, 'Message',
                                              "Failed to connect the server <b>" + newServerData[
                                                  'hostname'] + "</b>, Still wanna save the server details?",
                                              QMessageBox.Yes, QMessageBox.No)
+            if error is None:
+                newServerData['conn_status'] = 'Success'
 
             if reply == QMessageBox.Yes or not error:
                 if hostValue:
@@ -198,6 +201,7 @@ class server(UiSample):
                 self.qdialog.close()
                 QMessageBox.information(self.mainWindow, 'Warning', "Server details has been saved successfully",
                                         QMessageBox.Ok)
+                self.loadHostTable()
 
     def removeServer(self):
         index = self.treeView.selectedIndexes()[0]
@@ -347,7 +351,9 @@ class server(UiSample):
         return ip
 
     def mailRegex(self):
-        m = "^$|^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$"
+        # m = "^$|^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$"
+        # m = "^$|\w+@\w+\.\w+(,\s*\w+@\w+\.\w+)*"
+        m = "^$|[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})+(,\s*[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})+)*"
         return m
 
     def mailMandatoryRegex(self):

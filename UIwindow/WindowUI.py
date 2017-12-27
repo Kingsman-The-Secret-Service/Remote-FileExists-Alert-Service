@@ -79,18 +79,14 @@ class UiSample(object):
         self.menubar.addAction(menuRelin.menuAction())
 
     def serverMenu(self):
-        menuServer = QMenu(self.menubar)
-        menuServer.setTitle("Server")
-        menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
-        menuServer.addSeparator()
+        self.menuServer = QMenu(self.menubar)
+        self.menuServer.setTitle("Server")
+        self.menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
+        self.menuServer.addSeparator()
         count = self.dbHandler.readHostCountData()
         if count > 1:
-            currentRunning = self.dbHandler.selectWatchingHostDetail()
-            if len(currentRunning ) > 1:
-                menuServer.addAction("Stop All", self.runAllServer)
-            else:
-                menuServer.addAction("Run All", self.runAllServer)
-        self.menubar.addAction(menuServer.menuAction())
+            self.menuServer.addAction("Run All", self.runAllServer)
+        self.menubar.addAction(self.menuServer.menuAction())
 
     def mailSetupMenubar(self):
         menuSsh = QMenu(self.menubar)
@@ -214,6 +210,7 @@ class UiSample(object):
         self.qboxWidget.setVisible(False)
         self.tableHostWidget.setVisible(False)
         self.qsummarywidget.setVisible(False)
+        self.qbutton.setVisible(False)
 
         self.qHostTable.setStyleSheet("QTableView { border: none;}")
 
@@ -221,7 +218,7 @@ class UiSample(object):
         self.qHostTable.setRowCount(len(hdetails))
         self.qHostTable.setColumnCount(4)
         self.qHostTable.verticalHeader().hide()
-        self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username','Status','Action'])
+        self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username','Watching Status','Action','Status'])
         for index, element in enumerate(hdetails):
             btn_edit = QPushButton()
             btn_edit.setStyleSheet('text-decoration: underline; QPushButton { border: none;}')
@@ -233,21 +230,26 @@ class UiSample(object):
             currentPath = os.path.dirname(__file__)
             gifPath = currentPath + "/searching_resize.gif"
             qbtnSize = QSize(150, 25)
+            btn_stop = QPushButton()
+            btn_stop.setStyleSheet('text-decoration: underline; QPushButton { border: none;}')
+
             if element['iswatch'] == 'Yes':
                 progress = QTextMovieLabel('',gifPath)
                 progress.setFixedSize(qbtnSize)
                 btnTitle = 'Stop'
             else:
-                progress = QTextMovieLabel('Watching stopped ', '')
-                btnTitle = 'Run'
+                if element['conn_status'] == 'Failed':
+                    progress = QTextMovieLabel('Connection Error ', '')
+                    btn_stop.setStyleSheet('QPushButton { border: none;background-color: red; color:white;}')
+                    btnTitle = 'Error'
+                else:
+                    progress = QTextMovieLabel('Watching stopped ', '')
+                    btnTitle = 'Run'
             progress.setAlignment(Qt.AlignHCenter)
             self.qHostTable.setCellWidget(index, 2, progress)
 
-            btn_stop = QPushButton()
-            btn_stop.setStyleSheet('text-decoration: underline; QPushButton { border: none;}')
             btn_stop.setText(btnTitle)
             btn_stop.clicked.connect(self.hostStopBtn)
-
             self.qHostTable.setCellWidget(index, 3, btn_stop)
 
         self.qHostTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -264,13 +266,14 @@ class UiSample(object):
         if index.isValid():
             print (index.row(), index.column())
             hosts = hdetails[index.row()]
-            self.qbtnWidget.setVisible(False)
-            self.qHostTable.setVisible(False)
-            self.qboxWidget.setVisible(True)
-            self.tableHostWidget.setVisible(True)
-            self.qsummarywidget.setVisible(True)
-            self.qbutton.setVisible(True)
-            self.doubleClicked(hosts['hostname'])
+            if hosts['conn_status'] == 'Success':
+                self.qbtnWidget.setVisible(False)
+                self.qHostTable.setVisible(False)
+                self.qboxWidget.setVisible(True)
+                self.tableHostWidget.setVisible(True)
+                self.qsummarywidget.setVisible(True)
+                self.qbutton.setVisible(True)
+                self.doubleClicked(hosts['hostname'])
 
     def hostStopBtn(self):
         hdetails = self.dbHandler.selectHostDetail()
@@ -278,14 +281,15 @@ class UiSample(object):
         index = self.qHostTable.indexAt(clickme.pos())
         if index.isValid():
             host = hdetails[index.row()]
-            if host['iswatch'] == 'No':
-                self.dbHandler.updateWatcher('Yes', host['hostname'])
-                job = None
-                self.job = Job()
-                QThreadPool.globalInstance().start(self.job)
-            else:
-                self.dbHandler.updateFileData('', 'No', host['hostname'])
-            self.loadHostTable()
+            if host['conn_status'] == 'Success':
+                if host['iswatch'] == 'Yes':
+                    self.dbHandler.updateFileData('', 'No', host['hostname'])
+                else:
+                    self.dbHandler.updateWatcher('Yes', host['hostname'])
+                    self.job = None
+                    self.job = Job()
+                    QThreadPool.globalInstance().start(self.job)
+                self.loadHostTable()
 
     def backButton(self):
         self.qbtnWidget.setVisible(True)
@@ -317,7 +321,9 @@ class UiSample(object):
         menu = QMenu()
         hserver = self.getHostServer()
         if level == 0:
-            if hserver['iswatch'] == 'No':
+            if hserver['conn_status'] == 'Failed':
+                menu.addAction('Error')
+            elif hserver['iswatch'] == 'No':
                 menu.addAction("Run", self.runServer)
             else:
                 menu.addAction("Stop", self.stopServer)
@@ -334,7 +340,7 @@ class UiSample(object):
     def doubleClicked(self, name):
         self.rightWidget.setVisible(True)
         hostServer = self.dbHandler.getHostDetail(name)
-        self.tableHostWidget.setRowCount(6)
+        self.tableHostWidget.setRowCount(5)
         self.tableHostWidget.setColumnCount(2)
 
         self.tableHostWidget.setHorizontalHeaderLabels(['Data', 'Detail'])
@@ -353,13 +359,13 @@ class UiSample(object):
         self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['file_name']))
         self.tableHostWidget.setItem(4, 0, QTableWidgetItem("Email"))
         self.tableHostWidget.setItem(4, 1, QTableWidgetItem(hostServer['mail']))
-        self.tableHostWidget.setItem(5, 0, QTableWidgetItem("Is Watching"))
-        self.tableHostWidget.setItem(5, 1, QTableWidgetItem(hostServer['iswatch']))
+        # self.tableHostWidget.setItem(5, 0, QTableWidgetItem("Is Watching"))
+        # self.tableHostWidget.setItem(5, 1, QTableWidgetItem(hostServer['iswatch']))
 
         self.tableHostWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableHostWidget.resizeColumnsToContents()
-        self.tableHostWidget.setMaximumHeight(185)
-        self.tableHostWidget.setMaximumWidth(350)
+        self.tableHostWidget.setMaximumHeight(195)
+        self.tableHostWidget.setMaximumWidth(500)
 
         if hostServer['iswatch'] == 'Yes':
             self.progressLabel.setVisible(True)
@@ -401,28 +407,59 @@ class UiSample(object):
 
     def runServer(self):
         hostServer = self.getHostServer()
-        self.dbHandler.updateFileData('', 'Yes', hostServer['hostname'])
-        job = None
-        self.job = Job()
-        QThreadPool.globalInstance().start(self.job)
-        self.loadHostTable()
+        if hostServer['conn_status'] == 'Success':
+            self.dbHandler.updateFileData('', 'Yes', hostServer['hostname'])
+            job = None
+            self.job = Job()
+            QThreadPool.globalInstance().start(self.job)
+            self.loadHostTable()
         # self.doubleClicked(hostServer['hostname'])
 
     def runAllServer(self):
-        print 'hello'
         hdetails = self.dbHandler.selectHostDetail()
         for host in hdetails:
-            if host['iswatch'] == 'No':
-                self.dbHandler.updateWatcher('Yes', host['hostname'])
+            if host['conn_status'] == 'Success':
+                if host['iswatch'] == 'No':
+                    self.dbHandler.updateWatcher('Yes', host['hostname'])
         job = None
         self.job = Job()
         QThreadPool.globalInstance().start(self.job)
         self.loadHostTable()
+        self.updateMainMenu()
+
+        # currentRunning = self.dbHandler.selectWatchingHostDetail()
+        # self.menuServer.clear()
+        # self.menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
+        # if len(currentRunning) > 1:
+        #     self.menuServer.addAction("Stop All", self.stopAllServer)
+        # else:
+        #     self.menuServer.addAction("Run All", self.runAllServer)
+
+    def stopAllServer(self):
+        hdetails = self.dbHandler.selectHostDetail()
+        for host in hdetails:
+            if host['conn_status'] == 'Success':
+                if host['iswatch'] == 'Yes':
+                    self.dbHandler.updateFileData('','No', host['hostname'])
+
+        if self.job is not None:
+            del self.job
+        self.loadHostTable()
+        self.updateMainMenu()
 
     def stopServer(self):
         hostServer = self.getHostServer()
         self.dbHandler.updateFileData('', 'No', hostServer['hostname'])
         self.loadHostTable()
+
+    def updateMainMenu(self):
+        currentRunning = self.dbHandler.selectWatchingHostDetail()
+        self.menuServer.clear()
+        self.menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
+        if len(currentRunning) > 1:
+            self.menuServer.addAction("Stop All", self.stopAllServer)
+        else:
+            self.menuServer.addAction("Run All", self.runAllServer)
 
     def getHostServer(self):
         index = self.treeView.selectedIndexes()[0]

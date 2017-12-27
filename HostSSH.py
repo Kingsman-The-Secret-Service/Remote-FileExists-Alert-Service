@@ -31,6 +31,7 @@ class SSHClient(HostConstant, DbHandler):
         if not receiver:
             receiver = config['receiver']
         try:
+            recipients_list = receiver.split(',')
             server = smtplib.SMTP(smtp, int(smtp_port))
             server.ehlo()
             server.starttls()
@@ -43,7 +44,7 @@ class SSHClient(HostConstant, DbHandler):
             body = "File Created"
             msg.attach(MIMEText(body, 'plain'))
             text = msg.as_string()
-            server.sendmail(mail, receiver, text)
+            server.sendmail(mail, recipients_list, text)
         except smtplib.SMTPAuthenticationError as e:
             print e
             return
@@ -100,11 +101,12 @@ class SSHClient(HostConstant, DbHandler):
                 if not list == []:
                     list.sort()
                     myString = ",".join(list)
-                    myFs = self.readFileData(data['hostname'])
-                    if myFs == myString:
+                    myFs = self.getHostDetail(data['hostname'])
+                    if myFs['fwatch'] == myString:
                         return
                     else:
-                        self.updateFiles(myString,data['hostname'])
+                        if myFs['iswatch']=='Yes':
+                            self.updateFiles(myString,data['hostname'])
 
                     fileExt = str(data['file_name'])
                     if not fileExt:
@@ -150,11 +152,12 @@ class SSHClient(HostConstant, DbHandler):
             if not list == []:
                 list.sort()
                 myString = ",".join(list)
-                myFs = self.readFileData(data['hostname'])
-                if myFs == myString:
+                myFs = self.getHostDetail(data['hostname'])
+                if myFs['fwatch'] == myString:
                     return
                 else:
-                    self.updateFiles(myString, data['hostname'])
+                    if myFs['iswatch'] == 'Yes':
+                        self.updateFiles(myString, data['hostname'])
 
                 fileExt = str(data['file_name'])
                 if not fileExt:

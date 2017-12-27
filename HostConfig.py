@@ -91,7 +91,8 @@ class HostOptions(SSHClient, DbHandler, Mail):
                 'file_name':file_name,
                 'mail':email,
                 'fwatcher':'',
-                'is_watching':'No'
+                'is_watching':'No',
+                'conn_status':'Success'
             }
             self.saveData(hostData)
             # self.createJsonFile()

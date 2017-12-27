@@ -20,7 +20,8 @@ class DbHandler:
                                                      ''' + HostConstant.fname + ''' TEXT,\
                                                       ''' + HostConstant.email + ''' TEXT,\
                                                      ''' + HostConstant.fwatch + ''' TEXT, \
-                                                     ''' + HostConstant.iswatch + ''' TEXT);''')
+                                                     ''' + HostConstant.iswatch + ''' TEXT, \
+                                                     ''' + HostConstant.conn_status +''' TEXT);''')
 
         conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
                                                               (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
@@ -32,7 +33,7 @@ class DbHandler:
 
     def saveData(self, obj):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj['hostname']+"', '"+obj['username']+"', '"+obj['password']+"',"+obj['port']+",'"+obj['dir']+"','"+obj['file_name']+"','"+obj['mail']+"','"+obj['fwatcher']+"','"+obj['is_watching']+"' )")
+        conn.execute("INSERT INTO "+HostConstant.tName+" VALUES (NULL,'"+obj['hostname']+"', '"+obj['username']+"', '"+obj['password']+"',"+obj['port']+",'"+obj['dir']+"','"+obj['file_name']+"','"+obj['mail']+"','"+obj['fwatcher']+"','"+obj['is_watching']+"','"+obj['conn_status']+"' )")
         conn.commit()
         conn.close()
 
@@ -44,7 +45,7 @@ class DbHandler:
 
     def editData(self, hostValue):
         conn = self.connectDb()
-        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.host+" = '"+hostValue['hostname']+"', "+HostConstant.uname+" = '"+hostValue['username']+"', "+HostConstant.pwd+" = '"+hostValue['password']+"', "+HostConstant.port+" = '"+str(hostValue['port'])+"', "+HostConstant.dirpath+" = '"+hostValue['dir']+"', "+HostConstant.fname+" = '"+hostValue['file_name']+"', "+HostConstant.email+" = '"+hostValue['mail']+"' where "+HostConstant.did+" = '"+str(hostValue['did'])+"'")
+        conn.execute("UPDATE "+HostConstant.tName+" set "+HostConstant.host+" = '"+hostValue['hostname']+"', "+HostConstant.uname+" = '"+hostValue['username']+"', "+HostConstant.pwd+" = '"+hostValue['password']+"', "+HostConstant.port+" = '"+str(hostValue['port'])+"', "+HostConstant.dirpath+" = '"+hostValue['dir']+"', "+HostConstant.fname+" = '"+hostValue['file_name']+"', "+HostConstant.email+" = '"+hostValue['mail']+"', "+HostConstant.conn_status+" = '"+hostValue['conn_status']+"' where "+HostConstant.did+" = '"+str(hostValue['did'])+"'")
         conn.commit()
         conn.close()
 
@@ -99,7 +100,7 @@ class DbHandler:
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName)
         list = []
         for row in cursor:
-            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9]}
+            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9], 'conn_status':row[10]}
             list.append(hostServer)
         return list
 
@@ -108,7 +109,7 @@ class DbHandler:
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName + " where "+ HostConstant.iswatch + " = 'Yes'")
         list = []
         for row in cursor:
-            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9]}
+            hostServer = {'did': row[0], 'hostname': row[1], 'username': row[2], 'password': row[3],'port': row[4], 'dir': row[5], 'file_name': row[6], 'mail': row[7], 'fwatch':row[8], 'iswatch':row[9], 'conn_status':row[10]}
             list.append(hostServer)
         return list
 
@@ -132,7 +133,7 @@ class DbHandler:
         conn = self.connectDb()
         cursor = conn.execute("SELECT * FROM "+HostConstant.tName+" where "+HostConstant.host+" = '" + hostname + "'")
         datas = cursor.fetchone()
-        hostServer  = {'did':datas[0], 'hostname':datas[1],'username':datas[2],'password':datas[3],'port':datas[4], 'dir':datas[5],'file_name':datas[6],'mail':datas[7], 'fwatch':datas[8], 'iswatch':datas[9]}
+        hostServer  = {'did':datas[0], 'hostname':datas[1],'username':datas[2],'password':datas[3],'port':datas[4], 'dir':datas[5],'file_name':datas[6],'mail':datas[7], 'fwatch':datas[8], 'iswatch':datas[9], 'conn_status':datas[10]}
         return hostServer
 
     def selectMethod(self, did):
