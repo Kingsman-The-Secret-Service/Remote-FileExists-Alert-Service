@@ -73,7 +73,7 @@ class UiSample(object):
     def relinAllMenu(self):
         menuRelin = QMenu(self.menubar)
         menuRelin.setTitle("ReLinAll")
-        menuRelin.addAction("About")
+        menuRelin.addAction("About", self.aboutMenu)
         menuRelin.addSeparator()
         menuRelin.addAction("Exit", self.exitApp)
         self.menubar.addAction(menuRelin.menuAction())
@@ -107,6 +107,14 @@ class UiSample(object):
 
     def aboutMenu(self):
         print 'about'
+        self.qMainWidget.setVisible(True)
+        self.qbtnWidget.setVisible(False)
+        self.qbutton.setVisible(False)
+        self.progressLabel.setVisible(False)
+        self.qboxWidget.setVisible(False)
+        self.tableHostWidget.setVisible(False)
+        self.qsummarywidget.setVisible(False)
+        self.qHostTable.setVisible(False)
 
     def helpMenu(self):
         print 'help'
@@ -143,7 +151,7 @@ class UiSample(object):
         qwidget.setLayout(leftLayout)
 
         self.rightWidget = QWidget()
-        self.rightWidget.setStyleSheet("background-color: white")
+        # self.rightWidget.setStyleSheet("background-color: white")
         layout = QVBoxLayout()
         layout.setSpacing(10)
 
@@ -153,6 +161,69 @@ class UiSample(object):
         qbtnLayout.addWidget(self.qHostTable)
         self.qbtnWidget.setLayout(qbtnLayout)
         self.qbtnWidget.setVisible(False)
+
+        ###
+
+        self.qMainWidget = QWidget()
+        qmainLayuot = QVBoxLayout()
+
+        qSubWidget = QWidget()
+        qSubLayuot = QHBoxLayout()
+
+        qaboutLabel = QLabel()
+        qaboutLabel.setText('<b>About</b> <br/><br/>ReLinAll (Remote Linux All) is a secure protocol used as the primary means of connecting to Linux servers remotely. It provides a UI-based interface by spawning a remote shell.  After connecting server, it keep sends an mail to mentioned recipients globally or internally, when the file is created or deleted in the user spedified folder ')
+        qaboutLabel.setWordWrap(True)
+        afont = QFont()
+        afont.setPointSize(12)
+        qaboutLabel.setFont(afont)
+        qmainLayuot.addWidget(qaboutLabel, 0, Qt.AlignTop)
+
+        conLabelFont = QFont()
+        conLabelFont.setPointSize(24)
+
+        qmailWidget = QWidget()
+        qmailLayout = QVBoxLayout()
+        mailLabel = QLabel()
+        mailLabel.setText("Mail configuration")
+        mailLabel.setFont(conLabelFont)
+
+        pic = QLabel()
+        if self.dbHandler.readMailCountData() == 0:
+            imgPath = self.currentPath() + "/mail_cancel.png"
+        else:
+            imgPath = self.currentPath() + "/mail.png"
+        pixmap = QPixmap(imgPath)
+        pixmap.scaled(QSize(100,100), Qt.KeepAspectRatio)
+        pic.setPixmap(pixmap)
+        qmailLayout.addWidget(pic, 0, Qt.AlignTop)
+        qmailLayout.addWidget(mailLabel, 1, Qt.AlignTop)
+        qmailWidget.setLayout(qmailLayout)
+        qSubLayuot.addWidget(qmailWidget, 0, Qt.AlignLeft)
+
+        qconWidget = QWidget()
+        qconLayout = QVBoxLayout()
+        conLabel = QLabel()
+        conLabel.setFont(conLabelFont)
+        conLabel.setText('Success / Failure\nConnection')
+        conDataLabel = QLabel()
+
+        sData, fData = self.getConnectionData()
+        countData = str(sData) +"/"+str(fData)
+        conDataLabel.setText(countData)
+        font = QFont()
+        font.setPointSize(64)
+        font.setBold(True)
+        conDataLabel.setFont(font)
+
+        qconLayout.addWidget(conDataLabel)
+        qconLayout.addWidget(conLabel)
+        qconWidget.setLayout(qconLayout)
+        qSubLayuot.addWidget(qconWidget, 1, Qt.AlignVCenter)
+        qSubWidget.setLayout(qSubLayuot)
+
+        qmainLayuot.addWidget(qSubWidget, 1, Qt.AlignTop)
+        self.qMainWidget.setLayout(qmainLayuot)
+        layout.addWidget(self.qMainWidget)
 
         ###
         self.qbutton = QPushButton('Back')
@@ -180,7 +251,7 @@ class UiSample(object):
         self.tableSummaryWidget = QTableWidget()
         self.tableSummaryWidget.setStyleSheet("QTableView { border: none;}")
         qsummarybox.addWidget(self.tableSummaryWidget)
-        currentPath = os.path.dirname(__file__)
+        currentPath = self.currentPath()
         gifPath = currentPath + "/searching.gif"
         self.progressLabel = QTextMovieLabel('Watching...', gifPath)
         qsummarybox.addWidget(self.progressLabel)
@@ -190,10 +261,10 @@ class UiSample(object):
         self.qboxWidget.setVisible(False)
         self.tableHostWidget.setVisible(False)
         self.qsummarywidget.setVisible(False)
-        #####
+
         layout.addWidget(self.qbtnWidget)
         self.rightWidget.setLayout(layout)
-        self.rightWidget.setVisible(False)
+        # self.rightWidget.setVisible(False)
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(qwidget)
         splitter.addWidget(self.rightWidget)
@@ -203,8 +274,23 @@ class UiSample(object):
         centerWidget.setLayout(hbox)
         self.mainWindow.setCentralWidget(centerWidget)
 
+    def getConnectionData(self):
+        SFData = self.dbHandler.getSFCount()
+        if SFData['success'] is None:
+            success = '0'
+        else:
+            success = SFData['success']
+
+        if SFData['failure'] is None:
+            failure = '0'
+        else:
+            failure = SFData['failure']
+
+        return success, failure
+
     def loadHostTable(self):
-        self.rightWidget.setVisible(True)
+        # self.rightWidget.setVisible(True)
+        self.qMainWidget.setVisible(False)
         self.qbtnWidget.setVisible(True)
         self.qHostTable.setVisible(True)
         self.qboxWidget.setVisible(False)
@@ -213,11 +299,11 @@ class UiSample(object):
         self.qbutton.setVisible(False)
 
         self.qHostTable.setStyleSheet("QTableView { border: none;}")
-
         hdetails = self.dbHandler.selectHostDetail()
         self.qHostTable.setRowCount(len(hdetails))
         self.qHostTable.setColumnCount(4)
         self.qHostTable.verticalHeader().hide()
+        self.qHostTable.horizontalHeader().setStretchLastSection(True)
         self.qHostTable.setHorizontalHeaderLabels(['Server', 'Username','Watching Status','Action','Status'])
         for index, element in enumerate(hdetails):
             btn_edit = QPushButton()
@@ -227,7 +313,7 @@ class UiSample(object):
             self.qHostTable.setCellWidget(index, 0, btn_edit)
             self.qHostTable.setItem(index, 1, QTableWidgetItem(element['username']))
 
-            currentPath = os.path.dirname(__file__)
+            currentPath = self.currentPath()
             gifPath = currentPath + "/searching_resize.gif"
             qbtnSize = QSize(150, 25)
             btn_stop = QPushButton()
@@ -253,6 +339,7 @@ class UiSample(object):
             self.qHostTable.setCellWidget(index, 3, btn_stop)
 
         self.qHostTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.qHostTable.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         self.qHostTable.resizeColumnsToContents()
         # self.qHostTable.cellClicked.connect(self.cellClick)
 
@@ -301,6 +388,7 @@ class UiSample(object):
         self.loadHostTable()
 
     def viewSummary(self):
+        self.qMainWidget.setVisible(False)
         self.qbtnWidget.setVisible(False)
         self.qHostTable.setVisible(False)
         self.qboxWidget.setVisible(True)
@@ -469,3 +557,6 @@ class UiSample(object):
     def statusBar(self):
         self.statusbar = QStatusBar(self.mainWindow)
         self.mainWindow.setStatusBar(self.statusbar)
+
+    def currentPath(self):
+        return os.path.dirname(__file__)

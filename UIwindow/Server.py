@@ -13,7 +13,6 @@ class server(UiSample):
         self.serverData = QStandardItemModel()
         self.serverData.setHorizontalHeaderLabels(["Server List"])
         self.treeView.setModel(self.serverData)
-        self.dhandler = DbHandler()
         data = self.dbHandler.getServerGrouped()
 
         for group in data:
@@ -212,7 +211,8 @@ class server(UiSample):
                                      QMessageBox.Yes, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            self.dhandler.deleteHostData(hostname)
+            data = self.dbHandler.getHostDetail(hostname)
+            self.dbHandler.deleteData(data['hostname'])
             self.generateTree()
 
     def addMailConfig(self, mailServer = {}):

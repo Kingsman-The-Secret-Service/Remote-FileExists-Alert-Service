@@ -85,12 +85,13 @@ class DbHandler:
 
     def deleteData(self, did):
         conn = self.connectDb()
-        conn.execute("DELETE from "+HostConstant.tName+" where  "+HostConstant.did+" = "+str(did)+";")
+        conn.execute("DELETE from "+HostConstant.tName+" where  "+HostConstant.did+" = '"+str(did)+"'")
         conn.commit()
         conn.close()
 
     def deleteHostData(self, host):
         conn = self.connectDb()
+        print ("DELETE from "+HostConstant.tName+" where  "+HostConstant.host+" = '"+ host +"'")
         conn.execute("DELETE from "+HostConstant.tName+" where  "+HostConstant.host+" = '"+ host +"'")
         conn.commit()
         conn.close()
@@ -153,6 +154,16 @@ class DbHandler:
         conn.commit()
         conn.close()
         return len(result)
+
+    def getSFCount(self):
+        conn = self.connectDb()
+        cursor = conn.cursor()
+        cursor.execute("select sum(case when "+ HostConstant.conn_status +" = 'Success' then 1 else 0 end) success, sum(case when "+ HostConstant.conn_status +" = 'Failed' then 1 else 0 end) failed from "+HostConstant.tName)
+        data = cursor.fetchone()
+        dbObj = {'success': data[0], 'failure': data[1]}
+        cursor.close()
+        conn.close()
+        return dbObj
 
     def saveMailData(self,mailData):
         conn = self.connectDb()
