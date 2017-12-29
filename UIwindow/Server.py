@@ -201,6 +201,7 @@ class server(UiSample):
                 QMessageBox.information(self.mainWindow, 'Warning', "Server details has been saved successfully",
                                         QMessageBox.Ok)
                 self.loadHostTable()
+                self.updateAbout()
 
     def removeServer(self):
         index = self.treeView.selectedIndexes()[0]
@@ -212,15 +213,16 @@ class server(UiSample):
 
         if reply == QMessageBox.Yes:
             data = self.dbHandler.getHostDetail(hostname)
-            self.dbHandler.deleteData(data['hostname'])
+            self.dbHandler.deleteData(data['did'])
             self.generateTree()
+            self.updateAbout()
 
-    def addMailConfig(self, mailServer = {}):
-        self.qdialog = QDialog()
-        self.qdialog.setWindowTitle("Add Server Details")
-        self.qdialog.setWindowModality(Qt.ApplicationModal)
-        self.qdialog.setFixedSize(300, 280)
-        formwidget = QWidget(self.qdialog)
+    def addSmtpConfig(self, smtpServer = {}):
+        self.qsmtpdialog = QDialog()
+        self.qsmtpdialog.setWindowTitle("Add Smtp Details")
+        self.qsmtpdialog.setWindowModality(Qt.ApplicationModal)
+        self.qsmtpdialog.setFixedSize(280, 120)
+        formwidget = QWidget(self.qsmtpdialog)
         formLayout = QFormLayout(formwidget)
 
         smtpLabel = QLabel(formwidget)
@@ -233,50 +235,15 @@ class server(UiSample):
         portLabel.setToolTip('SMTP Port')
         formLayout.setWidget(1, QFormLayout.LabelRole, portLabel)
 
-        senderLabel = QLabel(formwidget)
-        senderLabel.setText("Email")
-        senderLabel.setToolTip('Email')
-        formLayout.setWidget(2, QFormLayout.LabelRole, senderLabel)
-
-        pwdLabel = QLabel(formwidget)
-        pwdLabel.setText("Password")
-        pwdLabel.setToolTip('Password')
-        formLayout.setWidget(3, QFormLayout.LabelRole, pwdLabel)
-        recLabel = QLabel(formwidget)
-        recLabel.setText("Receiver")
-        recLabel.setToolTip('Receiver')
-        formLayout.setWidget(4, QFormLayout.LabelRole, recLabel)
-        subLabel = QLabel(formwidget)
-        subLabel.setText("Subject")
-        subLabel.setToolTip('Subject')
-        formLayout.setWidget(5, QFormLayout.LabelRole, subLabel)
-
         self.smtpField = QLineEdit(formwidget)
         formLayout.setWidget(0, QFormLayout.FieldRole, self.smtpField)
         self.smtpPortField = QLineEdit(formwidget)
         formLayout.setWidget(1, QFormLayout.FieldRole, self.smtpPortField)
-        self.smtpMailField = QLineEdit(formwidget)
-        formLayout.setWidget(2, QFormLayout.FieldRole, self.smtpMailField)
-        self.mailPwdField = QLineEdit(formwidget)
-        self.mailPwdField.setEchoMode(QLineEdit.Password)
-        formLayout.setWidget(3, QFormLayout.FieldRole, self.mailPwdField)
-        self.receiverField = QLineEdit(formwidget)
-        formLayout.setWidget(4, QFormLayout.FieldRole, self.receiverField)
-        self.subjectField = QLineEdit(formwidget)
-        formLayout.setWidget(5, QFormLayout.FieldRole, self.subjectField)
 
-        if ('smtp' in mailServer):
-            self.smtpField.setText(mailServer['smtp'])
-        if ('smtpPort' in mailServer):
-            self.smtpPortField.setText(str(mailServer['smtpPort']))
-        if ('smtpMail' in mailServer):
-            self.smtpMailField.setText(mailServer['smtpMail'])
-        if ('mailPwd' in mailServer):
-            self.mailPwdField.setText(mailServer['mailPwd'])
-        if ('receiver' in mailServer):
-            self.receiverField.setText(mailServer['receiver'])
-        if ('subject' in mailServer):
-            self.subjectField.setText(mailServer['subject'])
+        if ('smtp' in smtpServer):
+            self.smtpField.setText(smtpServer['smtp'])
+        if ('smtpPort' in smtpServer):
+            self.smtpPortField.setText(str(smtpServer['smtpPort']))
 
         smtpExp = QRegExp(".{1,30}")
         hostnameValidator = QRegExpValidator(smtpExp, self.smtpField)
@@ -289,6 +256,74 @@ class server(UiSample):
         self.smtpPortField.setValidator(portValidator)
         self.smtpPortField.textChanged.connect(self.validateServerFormOnChange)
         self.smtpPortField.textChanged.emit(self.smtpPortField.text())
+
+        addButton = QPushButton(formwidget)
+        addButton.setText('Save')
+        formLayout.setWidget(7, QFormLayout.FieldRole, addButton)
+
+        addButton.clicked.connect(lambda: self.saveSmtp(smtpServer))
+        self.qsmtpdialog.exec_()
+
+    def saveSmtp(self, smtpValue):
+        newServerData = {
+            'smtp': self.smtpField.text(),
+            'smtpPort': self.smtpPortField.text(),
+        }
+        if not self.validateServerFormOnSubmit(newServerData):
+            if smtpValue:
+                self.dbHandler.updateSmtpData(newServerData)
+            else:
+                self.dbHandler.saveSmtpData(newServerData)
+
+            self.qsmtpdialog.close()
+            QMessageBox.information(self.mainWindow, 'Warning', "SMTP details has been saved successfully",
+                                    QMessageBox.Ok)
+            self.updateAbout()
+
+    def addMailConfig(self, mailServer = {}):
+        self.qdialog = QDialog()
+        self.qdialog.setWindowTitle("Add Mail Details")
+        self.qdialog.setWindowModality(Qt.ApplicationModal)
+        self.qdialog.setFixedSize(300, 200)
+        formwidget = QWidget(self.qdialog)
+        formLayout = QFormLayout(formwidget)
+
+        senderLabel = QLabel(formwidget)
+        senderLabel.setText("Email")
+        senderLabel.setToolTip('Email')
+        formLayout.setWidget(0, QFormLayout.LabelRole, senderLabel)
+
+        pwdLabel = QLabel(formwidget)
+        pwdLabel.setText("Password")
+        pwdLabel.setToolTip('Password')
+        formLayout.setWidget(1, QFormLayout.LabelRole, pwdLabel)
+        recLabel = QLabel(formwidget)
+        recLabel.setText("Receiver")
+        recLabel.setToolTip('Receiver')
+        formLayout.setWidget(2, QFormLayout.LabelRole, recLabel)
+        subLabel = QLabel(formwidget)
+        subLabel.setText("Subject")
+        subLabel.setToolTip('Subject')
+        formLayout.setWidget(3, QFormLayout.LabelRole, subLabel)
+
+        self.smtpMailField = QLineEdit(formwidget)
+        formLayout.setWidget(0, QFormLayout.FieldRole, self.smtpMailField)
+        self.mailPwdField = QLineEdit(formwidget)
+        self.mailPwdField.setEchoMode(QLineEdit.Password)
+        formLayout.setWidget(1, QFormLayout.FieldRole, self.mailPwdField)
+        self.receiverField = QLineEdit(formwidget)
+        formLayout.setWidget(2, QFormLayout.FieldRole, self.receiverField)
+        self.subjectField = QLineEdit(formwidget)
+        formLayout.setWidget(3, QFormLayout.FieldRole, self.subjectField)
+
+        if ('smtpMail' in mailServer):
+            self.smtpMailField.setText(mailServer['smtpMail'])
+        if ('mailPwd' in mailServer):
+            self.mailPwdField.setText(mailServer['mailPwd'])
+        if ('receiver' in mailServer):
+            self.receiverField.setText(mailServer['receiver'])
+        if ('subject' in mailServer):
+            self.subjectField.setText(mailServer['subject'])
 
         mailFieldExp = QRegExp(self.mailMandatoryRegex())
         mailValidator = QRegExpValidator(mailFieldExp, self.smtpMailField)
@@ -307,7 +342,8 @@ class server(UiSample):
         self.receiverField.textChanged.connect(self.validateServerFormOnChange)
         self.receiverField.textChanged.emit(self.receiverField.text())
 
-        subValidator = QRegExpValidator(smtpExp, self.subjectField)
+        subExp = QRegExp(".{1,30}")
+        subValidator = QRegExpValidator(subExp, self.subjectField)
         self.subjectField.setValidator(subValidator)
         self.subjectField.textChanged.connect(self.validateServerFormOnChange)
         self.subjectField.textChanged.emit(self.subjectField.text())
@@ -319,11 +355,11 @@ class server(UiSample):
         addButton.clicked.connect(lambda: self.saveMail(mailServer))
         self.qdialog.exec_()
 
-
     def saveMail(self, mailValue):
+        smtpData = self.dbHandler.readSmtpData()
         newServerData = {
-            'smtp': self.smtpField.text(),
-            'smtpPort': self.smtpPortField.text(),
+            'smtp':smtpData['smtp'],
+            'smtpPort':smtpData['smtpPort'],
             'smtpMail': self.smtpMailField.text(),
             'mailPwd': self.mailPwdField.text(),
             'receiver': self.receiverField.text(),
@@ -344,6 +380,8 @@ class server(UiSample):
                 self.qdialog.close()
                 QMessageBox.information(self.mainWindow, 'Warning', "Mail details has been saved successfully",
                                         QMessageBox.Ok)
+
+                self.updateAbout()
 
     def domainOrIpRegex(self):
         ip = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"

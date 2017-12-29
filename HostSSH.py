@@ -20,9 +20,10 @@ class SSHClient(HostConstant, DbHandler):
         return results
 
     def mailAlert(self, data):
+        smtpConfig = self.readSmtpData()
         config = self.readMailData()
-        smtp = config['smtp']
-        smtp_port = config['smtpPort']
+        smtp = smtpConfig['smtp']
+        smtp_port = smtpConfig['smtpPort']
         mail = config['smtpMail']
         password = config['mailPwd']
         subject = config['subject']
@@ -86,8 +87,7 @@ class SSHClient(HostConstant, DbHandler):
             server, username, password = (data['hostname'], data['username'], pwd)
             port = data['port']
             ssh = paramiko.SSHClient()
-            sys.stdout.write('\nconnecting host...')
-            print data['hostname']
+            sys.stdout.write('connecting host...')
             time.sleep(2)
             sys.stdout.flush()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())

@@ -44,7 +44,8 @@ class HostConstant:
     iswatch = 'is_watching'
     conn_status = 'conn_status'
 
-    mTName = 'config'
+    mTName = 'mail_config'
+    sTName = 'smtp_config'
     smtp = 'smtp'
     smtp_port = 'smtp_port'
     receiver = 'receiver'

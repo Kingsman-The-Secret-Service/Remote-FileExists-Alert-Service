@@ -249,11 +249,12 @@ class HostOptions(SSHClient, DbHandler, Mail):
         try:
             table_data = []
             table_data.append(['Mail', 'values'])
+            smtpConfig = self.readSmtpData()
             config = self.readMailData()
             if config is None:
                 return
-            table_data.append(['SMTP', config['smtp']])
-            table_data.append(['SMTP Port', config['smtpPort']])
+            table_data.append(['SMTP', smtpConfig['smtp']])
+            table_data.append(['SMTP Port', smtpConfig['smtpPort']])
             table_data.append(['Email', config['smtpMail']])
             table_data.append(['Password',' **********'])
             table_data.append(['Receiver', config['receiver']])
@@ -261,14 +262,17 @@ class HostOptions(SSHClient, DbHandler, Mail):
             table = AsciiTable(table_data)
             print table.table
 
-            print 'Do you want to edit mail configuration?'
-            print '(1) Modify'
-            print '(2) Exit'
+            print 'Do you want to edit following configuration?'
+            print '(1) SMTP'
+            print '(2) Mail'
+            print '(3) Exit'
             uMailInput = raw_input('Enter the option: ')
             while not Validations.checkIsInteger(uMailInput):
                 uMailInput = raw_input("Please enter the option: ")
 
             if int(uMailInput) == 1:
+                self.configSmtp(self)
+            if int(uMailInput) == 2:
                 self.configMail(self,config['smtpMail'])
             else:
                 return

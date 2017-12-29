@@ -90,17 +90,30 @@ class UiSample(object):
 
     def mailSetupMenubar(self):
         menuSsh = QMenu(self.menubar)
-        menuSsh.setTitle("Mail")
+        menuSsh.setTitle("Configuration")
         menuSsh.addSeparator()
-        menuSsh.addAction("Setup", self.mailSetup)
+        menuSsh.addAction("SMTP Details", self.smtpSetup)
+        menuSsh.addAction("Mail Details", self.mailSetup)
         self.menubar.addAction(menuSsh.menuAction())
 
-    def mailSetup(self):
-        mailData = self.dbHandler.readMailData()
-        if mailData is None:
-            self.addMailConfig()
+    def smtpSetup(self):
+        smtpData = self.dbHandler.readSmtpData()
+        if smtpData is None:
+            self.addSmtpConfig()
         else:
-            self.addMailConfig(mailData)
+            self.addSmtpConfig(smtpData)
+
+    def mailSetup(self):
+        smtpData = self.dbHandler.readSmtpData()
+        if smtpData is None:
+            QMessageBox.information(self.mainWindow, 'Warning', "Please configure the SMTP details.",
+                                    QMessageBox.Ok)
+        else:
+            mailData = self.dbHandler.readMailData()
+            if mailData is None:
+                self.addMailConfig()
+            else:
+                self.addMailConfig(mailData)
 
     def exitApp(self):
         sys.exit()
@@ -146,6 +159,7 @@ class UiSample(object):
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.doubleClicked.connect(self.loadHostTable)
         self.treeView.setAlternatingRowColors(True)
+        self.treeView.setFixedWidth(180)
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.treeView)
         qwidget.setLayout(leftLayout)
@@ -163,7 +177,6 @@ class UiSample(object):
         self.qbtnWidget.setVisible(False)
 
         ###
-
         self.qMainWidget = QWidget()
         qmainLayuot = QVBoxLayout()
 
@@ -181,47 +194,70 @@ class UiSample(object):
         conLabelFont = QFont()
         conLabelFont.setPointSize(24)
 
-        qmailWidget = QWidget()
-        qmailLayout = QVBoxLayout()
-        mailLabel = QLabel()
-        mailLabel.setText("Mail configuration")
-        mailLabel.setFont(conLabelFont)
-
-        pic = QLabel()
-        if self.dbHandler.readMailCountData() == 0:
+        qsmtpWidget = QWidget()
+        qsmtpLayout = QVBoxLayout()
+        self.pic = QLabel()
+        if self.dbHandler.readSmtpData() is None:
             imgPath = self.currentPath() + "/mail_cancel.png"
         else:
             imgPath = self.currentPath() + "/mail.png"
         pixmap = QPixmap(imgPath)
-        pixmap.scaled(QSize(100,100), Qt.KeepAspectRatio)
-        pic.setPixmap(pixmap)
-        qmailLayout.addWidget(pic, 0, Qt.AlignTop)
-        qmailLayout.addWidget(mailLabel, 1, Qt.AlignTop)
-        qmailWidget.setLayout(qmailLayout)
-        qSubLayuot.addWidget(qmailWidget, 0, Qt.AlignLeft)
+        self.pic.setPixmap(pixmap)
+        self.pic.setFixedHeight(90)
+        self.pic.setFixedWidth(90)
+
+        mailLabel = QLabel()
+        mailLabel.setText("SMTP configuration")
+        mailLabel.setFont(conLabelFont)
+
+        qsmtpLayout.addWidget(self.pic, 0, Qt.AlignTop)
+        qsmtpLayout.addWidget(mailLabel, 1, Qt.AlignTop)
+        qsmtpWidget.setLayout(qsmtpLayout)
+        qSubLayuot.addWidget(qsmtpWidget, 0, Qt.AlignLeft)
 
         qconWidget = QWidget()
         qconLayout = QVBoxLayout()
         conLabel = QLabel()
         conLabel.setFont(conLabelFont)
         conLabel.setText('Success / Failure\nConnection')
-        conDataLabel = QLabel()
+        self.conDataLabel = QLabel()
 
         sData, fData = self.getConnectionData()
         countData = str(sData) +"/"+str(fData)
-        conDataLabel.setText(countData)
+        self.conDataLabel.setText(countData)
         font = QFont()
         font.setPointSize(64)
         font.setBold(True)
-        conDataLabel.setFont(font)
+        self.conDataLabel.setFont(font)
 
-        qconLayout.addWidget(conDataLabel)
+        qconLayout.addWidget(self.conDataLabel)
         qconLayout.addWidget(conLabel)
         qconWidget.setLayout(qconLayout)
-        qSubLayuot.addWidget(qconWidget, 1, Qt.AlignVCenter)
+        qSubLayuot.addWidget(qconWidget, 1, Qt.AlignRight)
         qSubWidget.setLayout(qSubLayuot)
 
+        qmWidget = QWidget()
+        qmLayout = QVBoxLayout()
+
+        self.qmIconLabel = QLabel()
+        if self.dbHandler.readMailCountData() == 0:
+            img = self.currentPath() + "/mail_cancel.png"
+        else:
+            img = self.currentPath() + "/mail.png"
+        qpixmap = QPixmap(img)
+        self.qmIconLabel.setPixmap(qpixmap)
+        self.qmIconLabel.setFixedHeight(90)
+        self.qmIconLabel.setFixedWidth(90)
+
+        qmLabel = QLabel()
+        qmLabel.setText('Mail Configuration')
+        qmLabel.setFont(conLabelFont)
+        qmLayout.addWidget(self.qmIconLabel, 0, Qt.AlignTop)
+        qmLayout.addWidget(qmLabel, 1, Qt.AlignTop)
+        qmWidget.setLayout(qmLayout)
+
         qmainLayuot.addWidget(qSubWidget, 1, Qt.AlignTop)
+        qmainLayuot.addWidget(qmWidget, 2, Qt.AlignTop)
         self.qMainWidget.setLayout(qmainLayuot)
         layout.addWidget(self.qMainWidget)
 
@@ -264,7 +300,6 @@ class UiSample(object):
 
         layout.addWidget(self.qbtnWidget)
         self.rightWidget.setLayout(layout)
-        # self.rightWidget.setVisible(False)
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(qwidget)
         splitter.addWidget(self.rightWidget)
@@ -342,6 +377,30 @@ class UiSample(object):
         self.qHostTable.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         self.qHostTable.resizeColumnsToContents()
         # self.qHostTable.cellClicked.connect(self.cellClick)
+
+    def updateAbout(self):
+        if self.dbHandler.readSmtpData() == 0:
+            imgPath = self.currentPath() + "/mail_cancel.png"
+        else:
+            imgPath = self.currentPath() + "/mail.png"
+        pixmap = QPixmap(imgPath)
+        self.pic.setPixmap(pixmap)
+        # pic.setGeometry(0,0,200,200)
+        self.pic.setFixedHeight(90)
+        self.pic.setFixedWidth(90)
+
+        if self.dbHandler.readMailCountData() == 0:
+            img = self.currentPath() + "/mail_cancel.png"
+        else:
+            img = self.currentPath() + "/mail.png"
+        qpixmap = QPixmap(img)
+        self.qmIconLabel.setPixmap(qpixmap)
+        self.qmIconLabel.setFixedHeight(90)
+        self.qmIconLabel.setFixedWidth(90)
+
+        sData, fData = self.getConnectionData()
+        countData = str(sData) + "/" + str(fData)
+        self.conDataLabel.setText(countData)
 
     def cellClick(self, row, col):
         print "Click on " + str(row) + " " + str(col)
@@ -514,14 +573,6 @@ class UiSample(object):
         QThreadPool.globalInstance().start(self.job)
         self.loadHostTable()
         self.updateMainMenu()
-
-        # currentRunning = self.dbHandler.selectWatchingHostDetail()
-        # self.menuServer.clear()
-        # self.menuServer.addAction("Add Server", self.addServer).setObjectName('MainMenuAddServer')
-        # if len(currentRunning) > 1:
-        #     self.menuServer.addAction("Stop All", self.stopAllServer)
-        # else:
-        #     self.menuServer.addAction("Run All", self.runAllServer)
 
     def stopAllServer(self):
         hdetails = self.dbHandler.selectHostDetail()

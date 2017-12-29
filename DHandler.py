@@ -24,12 +24,14 @@ class DbHandler:
                                                      ''' + HostConstant.conn_status +''' TEXT);''')
 
         conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.mTName + '''\
-                                                              (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
-                                                             ''' + HostConstant.smtp_port + ''' TEXT NOT NULL,\
-                                                             ''' + HostConstant.email + ''' TEXT NOT NULL,\
+                                                              (''' + HostConstant.email + ''' TEXT NOT NULL,\
                                                              ''' + HostConstant.pwd + ''' TEXT NOT NULL,\
                                                              ''' + HostConstant.receiver + ''' TEXT NOT NULL,\
                                                              ''' + HostConstant.sub + ''' TEXT);''')
+
+        conn.execute('''CREATE TABLE IF NOT EXISTS %s ''' % HostConstant.sTName + '''\
+                                                                      (''' + HostConstant.smtp + ''' TEXT NOT NULL,\
+                                                                     ''' + HostConstant.smtp_port + ''' TEXT NOT NULL);''')
 
     def saveData(self, obj):
         conn = self.connectDb()
@@ -167,13 +169,13 @@ class DbHandler:
 
     def saveMailData(self,mailData):
         conn = self.connectDb()
-        conn.execute("INSERT INTO "+HostConstant.mTName+" VALUES ('"+mailData['smtp']+"', '"+mailData['smtpPort']+"', '"+mailData['smtpMail'] +"','"+mailData['mailPwd']+"','"+mailData['receiver']+"','"+mailData['subject']+"' )")
+        conn.execute("INSERT INTO "+HostConstant.mTName+" VALUES ('"+mailData['smtpMail'] +"','"+mailData['mailPwd']+"','"+mailData['receiver']+"','"+mailData['subject']+"' )")
         conn.commit()
         conn.close()
 
     def updateMailData(self, mid, data):
         conn = self.connectDb()
-        conn.execute("UPDATE " + HostConstant.mTName + " set " + HostConstant.smtp + " = '" + data['smtp'] + "', " + HostConstant.smtp_port + " = '" + data['smtpPort'] + "', " + HostConstant.email + " = '" + data['smtpMail'] + "', " + HostConstant.pwd + " = '" + data['mailPwd'] + "', " + HostConstant.receiver + " = '" + data['receiver'] + "', " + HostConstant.sub + " = '" + data['subject'] + "' where "+HostConstant.email+" = '"+mid+"'")
+        conn.execute("UPDATE " + HostConstant.mTName + " set " + HostConstant.email + " = '" + data['smtpMail'] + "', " + HostConstant.pwd + " = '" + data['mailPwd'] + "', " + HostConstant.receiver + " = '" + data['receiver'] + "', " + HostConstant.sub + " = '" + data['subject'] + "' where "+HostConstant.email+" = '"+mid+"'")
         conn.commit()
         conn.close()
 
@@ -189,10 +191,33 @@ class DbHandler:
     def readMailData(self):
         conn = self.connectDb()
         data = None
-        cursor = conn.execute("SELECT "+ HostConstant.smtp +","+ HostConstant.smtp_port +","+ HostConstant.email +","+ HostConstant.pwd +","+ HostConstant.receiver +","+ HostConstant.sub +" FROM "+HostConstant.mTName)
+        cursor = conn.execute("SELECT "+ HostConstant.email +","+ HostConstant.pwd +","+ HostConstant.receiver +","+ HostConstant.sub +" FROM "+HostConstant.mTName)
         mylist = cursor.fetchone()
         if mylist:
-            data = {'smtp':str(mylist[0]),'smtpPort': str(mylist[1]),'smtpMail': str(mylist[2]),'mailPwd': str(mylist[3]),'receiver': str(mylist[4]),'subject': str(mylist[5])}
+            data = {'smtpMail': str(mylist[0]),'mailPwd': str(mylist[1]),'receiver': str(mylist[2]),'subject': str(mylist[3])}
+        cursor.close()
+        conn.close()
+        return data
+
+    def saveSmtpData(self,smtpData):
+        conn = self.connectDb()
+        conn.execute("INSERT INTO "+HostConstant.sTName+" VALUES ('"+smtpData['smtp']+"', '"+smtpData['smtpPort']+"')")
+        conn.commit()
+        conn.close()
+
+    def updateSmtpData(self, data):
+        conn = self.connectDb()
+        conn.execute("UPDATE " + HostConstant.sTName + " set " + HostConstant.smtp + " = '" + data['smtp'] + "', " + HostConstant.smtp_port + " = '" + data['smtpPort'] + "'")
+        conn.commit()
+        conn.close()
+
+    def readSmtpData(self):
+        conn = self.connectDb()
+        data = None
+        cursor = conn.execute("SELECT "+ HostConstant.smtp +","+ HostConstant.smtp_port +" FROM "+HostConstant.sTName)
+        mylist = cursor.fetchone()
+        if mylist:
+            data = {'smtp':str(mylist[0]),'smtpPort': str(mylist[1])}
         cursor.close()
         conn.close()
         return data
