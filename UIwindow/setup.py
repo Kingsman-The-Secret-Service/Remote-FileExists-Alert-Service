@@ -24,3 +24,7 @@ setup(
       #          'install.py'
       #          ]
       # ) 
+
+      # pip install halo
+      # pip install paramiko
+      # pip install terminaltables
