@@ -9,17 +9,34 @@ class Mail:
             self.db = DbHandler()
 
     def initSetup(self):
+        if self.db.readSmtpData() is None:
+            smtpData = {'smtp': 'smtp.gmail.com',
+                        'smtpPort': '587'}
+            self.db.saveSmtpData(smtpData)
+
         if self.db.readMailCountData() == 0:
-            self.db.saveMailData('smtp.gmail.com', '587', 'xxxxx@gmail.com', 'xxxxxxx', 'yyyyy@gmail.com', 'File Created')
+            mailData = {'smtpMail':'xxxxx@gmail.com',
+                        'mailPwd':'xxxxxxx',
+                        'receiver':'yyyyyy@gmail.com',
+                        'subject':'File Created'
+                        }
+            self.db.saveMailData(mailData)
+
+    def configSmtp(self, dbObj):
+        smtp = raw_input("Enter the SMTP: ")
+        while not Validations.checkIsEmpty(smtp):
+            smtp = raw_input("Enter the valid SMTP: ")
+        smtp_port = raw_input("Enter SMTP Port: ")
+        while not Validations.checkIsEmpty(smtp_port):
+            smtp_port = raw_input("Please enter the SMTP Port: ")
+
+        mailData = {'smtp': smtp,
+                    'smtpPort': smtp_port}
+        dbObj.updateSmtpData(mailData)
+        dbObj.updateMail()
 
     def configMail(self, dbObj, mId):
         try:
-            smtp = raw_input("Enter the SMTP: ")
-            while not Validations.checkIsEmpty(smtp):
-                smtp = raw_input("Enter the valid ip address: ")
-            smtp_port = raw_input("Enter SMTP Port: ")
-            while not Validations.checkIsEmpty(smtp_port):
-                smtp_port = raw_input("Please enter the SMTP Port: ")
             email = raw_input("Enter email: ")
             while not Validations.checkIsEmpty(email):
                 email = raw_input('Please enter the email: ')
@@ -33,6 +50,11 @@ class Mail:
             while not Validations.checkIsEmpty(subject):
                 subject = raw_input('Please enter the mail subject: ')
 
-            dbObj.updateMailData(mId, smtp, smtp_port, email, password, receiver, subject)
+            mailData = {'smtpMail': email,
+                        'mailPwd': password,
+                        'receiver': receiver,
+                        'subject': subject
+                        }
+            dbObj.updateMailData(mId, mailData)
         except KeyboardInterrupt:
             return

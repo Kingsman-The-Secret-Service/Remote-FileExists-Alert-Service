@@ -1,4 +1,5 @@
 from halo import Halo
+import base64
 
 class HostConstant:
     haloSpinner = None
@@ -8,6 +9,18 @@ class HostConstant:
             self.haloSpinner = Halo(text='Please wait', spinner='dots1')
             #https://github.com/sindresorhus/cli-spinners/blob/dac4fc6571059bb9e9bc204711e9dfe8f72e5c6f/spinners.json
         return self.haloSpinner
+
+    def startProgress(self):
+        self.initSpinner().start()
+
+    def stopProgress(self):
+        self.initSpinner().stop()
+
+    def encryptpwd(self, pwd):
+        return base64.b64encode(pwd)
+
+    def decryptpwd(self, pwd):
+        return base64.b64decode(pwd)
 
     ADD = '(1) Add Host'
     REMOVE = '(2) Remove Host'
@@ -28,8 +41,11 @@ class HostConstant:
     fname ='file_name'
     email ='email'
     fwatch = 'f_watcher'
+    iswatch = 'is_watching'
+    conn_status = 'conn_status'
 
     mTName = 'mail_config'
+    sTName = 'smtp_config'
     smtp = 'smtp'
     smtp_port = 'smtp_port'
     receiver = 'receiver'
